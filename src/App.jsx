@@ -1,11 +1,12 @@
 /*
- * LEXSTAR — Phase 2
- * Tag & Filter System · Bottom-sheet panel · Category/tag toggles · Active badge
+ * LEXSTAR — Phase 3
+ * Markets Screen · Exchange tabs · Index card · Sparklines · Top movers · Market news
  *
- * Builds on Phase 1: adds a fully-wired filter panel with animated slide-up,
- * category chips, grouped tag chips, detail-level toggle, and live feed filtering.
+ * Builds on Phase 2: replaces the Markets placeholder with a fully-functional
+ * exchange view. Static data lives in src/markets.js (replaced by live feeds in Phase 7).
  */
 import { useState } from "react";
+import { EXCHANGES, MARKET_MOVERS, MARKET_NEWS } from "./markets.js";
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const C = {
@@ -777,6 +778,286 @@ function FeedScreen({ plan, detailLevel, filteredArticles }) {
   );
 }
 
+// ─── PHASE 3: MARKETS SCREEN ─────────────────────────────────────────────────
+
+function getLocalTime(utcOffset) {
+  const now = new Date();
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const local = new Date(utcMs + utcOffset * 3600000);
+  return local.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+}
+
+function Sparkline({ values, positive }) {
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  return (
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 36 }}>
+      {values.map((v, i) => {
+        const heightPct = Math.max(((v - min) / range) * 100, 8);
+        const isLast = i === values.length - 1;
+        return (
+          <div key={i} style={{
+            width: 7,
+            height: `${heightPct}%`,
+            borderRadius: 3,
+            background: isLast
+              ? (positive ? C.green : C.red)
+              : (positive ? `${C.green}40` : `${C.red}40`),
+          }} />
+        );
+      })}
+    </div>
+  );
+}
+
+function MoverRow({ ticker }) {
+  const pos = ticker.changePct >= 0;
+  return (
+    <div style={{
+      display: "flex", justifyContent: "space-between", alignItems: "center",
+      padding: "9px 0",
+      borderBottom: `1px solid ${C.border}`,
+    }}>
+      <div>
+        <p style={{
+          fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: C.text,
+        }}>{ticker.symbol}</p>
+        <p style={{
+          fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.textMid, marginTop: 1,
+        }}>{ticker.name}</p>
+      </div>
+      <span style={{
+        fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600,
+        color: pos ? C.green : C.red,
+      }}>
+        {pos ? "+" : ""}{ticker.changePct.toFixed(2)}%
+      </span>
+    </div>
+  );
+}
+
+function MarketNewsCard({ article }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div
+      onClick={() => setExpanded(e => !e)}
+      style={{
+        minWidth: 230, maxWidth: 250,
+        background: C.surface,
+        border: `1px solid ${C.border}`,
+        borderRadius: 10,
+        padding: "14px 14px 12px",
+        cursor: "pointer",
+        flexShrink: 0,
+        transition: "border-color 0.15s",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+        <span style={{
+          fontSize: 9, color: C.blue, fontFamily: "'DM Sans', sans-serif",
+          fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase",
+        }}>Markets</span>
+        <span style={{ fontSize: 10, color: C.textDim, fontFamily: "'DM Sans', sans-serif" }}>
+          {article.time}
+        </span>
+      </div>
+      <p style={{
+        fontFamily: "'DM Serif Display', serif",
+        fontSize: 14, lineHeight: 1.4, color: C.text,
+      }}>{article.headline}</p>
+      {expanded && (
+        <div style={{ marginTop: 10 }}>
+          {article.verified && (
+            <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 6 }}>
+              <span style={{ fontSize: 10, color: C.green, fontFamily: "'DM Sans', sans-serif" }}>✓ Verified</span>
+              <span style={{ fontSize: 9, color: C.textDim, fontFamily: "'DM Sans', sans-serif" }}>
+                {article.sources.join(" · ")}
+              </span>
+            </div>
+          )}
+          <p style={{ fontSize: 11, color: C.gold, fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>
+            Read full articles →
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MarketsScreen() {
+  const [activeExchange, setActiveExchange] = useState(EXCHANGES[0].id);
+  const exchange = EXCHANGES.find(e => e.id === activeExchange) || EXCHANGES[0];
+  const movers   = MARKET_MOVERS[activeExchange] || MARKET_MOVERS.nyse;
+  const news     = MARKET_NEWS.filter(n => n.exchange === activeExchange);
+
+  const positive = exchange.change >= 0;
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto" }}>
+      {/* Exchange tab bar */}
+      <div style={{
+        display: "flex",
+        overflowX: "auto",
+        padding: "12px 16px 0",
+        borderBottom: `1px solid ${C.border}`,
+        background: C.bg,
+        position: "sticky", top: 0, zIndex: 10,
+        gap: 0,
+        scrollbarWidth: "none",
+      }}>
+        {EXCHANGES.map(ex => (
+          <button
+            key={ex.id}
+            onClick={() => setActiveExchange(ex.id)}
+            style={{
+              flexShrink: 0,
+              background: "none", border: "none",
+              padding: "8px 14px 12px",
+              cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 13, fontWeight: activeExchange === ex.id ? 600 : 400,
+              color: activeExchange === ex.id ? C.gold : C.textDim,
+              borderBottom: `2px solid ${activeExchange === ex.id ? C.gold : "transparent"}`,
+              transition: "all 0.15s",
+              whiteSpace: "nowrap",
+            }}
+          >{ex.name}</button>
+        ))}
+      </div>
+
+      <div style={{ padding: "20px 20px 32px" }}>
+        {/* Index card */}
+        <div style={{
+          background: C.surface,
+          border: `1px solid ${C.border}`,
+          borderRadius: 14,
+          padding: "18px 18px 16px",
+          marginBottom: 20,
+        }}>
+          {/* Exchange name + flag + local time */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                <span style={{ fontSize: 22 }}>{exchange.flag}</span>
+                <span style={{
+                  fontFamily: "'DM Serif Display', serif", fontSize: 18, color: C.text,
+                }}>{exchange.fullName}</span>
+              </div>
+              <span style={{
+                fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.textMid,
+              }}>{exchange.index}</span>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <span style={{
+                fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.textDim,
+              }}>Local</span>
+              <p style={{
+                fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.textMid, fontWeight: 500,
+              }}>{getLocalTime(exchange.utcOffset)}</p>
+            </div>
+          </div>
+
+          {/* Value + change */}
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 14 }}>
+            <div>
+              <p style={{
+                fontFamily: "'DM Serif Display', serif", fontSize: 32, color: C.text, lineHeight: 1,
+              }}>
+                {exchange.value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                <span style={{
+                  fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600,
+                  color: positive ? C.green : C.red,
+                }}>
+                  {positive ? "▲" : "▼"} {positive ? "+" : ""}
+                  {exchange.change.toFixed(2)}
+                </span>
+                <span style={{
+                  fontFamily: "'DM Sans', sans-serif", fontSize: 13,
+                  color: positive ? C.green : C.red,
+                }}>
+                  ({positive ? "+" : ""}{exchange.changePct.toFixed(2)}%)
+                </span>
+              </div>
+            </div>
+            <Sparkline values={exchange.sparkline} positive={positive} />
+          </div>
+
+          {/* 7-day label */}
+          <p style={{
+            fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: C.textDim, textAlign: "right",
+          }}>7-day trend</p>
+        </div>
+
+        {/* Top movers */}
+        <p style={{
+          fontSize: 10, color: C.textDim, fontFamily: "'DM Sans', sans-serif",
+          fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase",
+          marginBottom: 12,
+        }}>Top Movers</p>
+
+        <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
+          {/* Gainers */}
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <span style={{ fontSize: 11, color: C.green }}>▲</span>
+              <span style={{
+                fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.green, fontWeight: 600,
+              }}>Gainers</span>
+            </div>
+            {movers.gainers.map(t => <MoverRow key={t.symbol} ticker={t} />)}
+          </div>
+
+          {/* Vertical divider */}
+          <div style={{ width: 1, background: C.border, flexShrink: 0 }} />
+
+          {/* Losers */}
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <span style={{ fontSize: 11, color: C.red }}>▼</span>
+              <span style={{
+                fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: C.red, fontWeight: 600,
+              }}>Losers</span>
+            </div>
+            {movers.losers.map(t => <MoverRow key={t.symbol} ticker={t} />)}
+          </div>
+        </div>
+
+        {/* Market news strip */}
+        {news.length > 0 && (
+          <>
+            <p style={{
+              fontSize: 10, color: C.textDim, fontFamily: "'DM Sans', sans-serif",
+              fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase",
+              marginBottom: 12,
+            }}>Market News</p>
+            <div style={{
+              display: "flex", gap: 12,
+              overflowX: "auto", paddingBottom: 4,
+              scrollbarWidth: "none",
+              marginLeft: -20, paddingLeft: 20,
+              marginRight: -20, paddingRight: 20,
+            }}>
+              {news.map(article => (
+                <MarketNewsCard key={article.id} article={article} />
+              ))}
+            </div>
+          </>
+        )}
+
+        {!news.length && (
+          <p style={{
+            fontSize: 12, color: C.textDim, fontFamily: "'DM Sans', sans-serif",
+            textAlign: "center", paddingTop: 8,
+          }}>No market news for this exchange right now.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── PLACEHOLDER SCREENS ──────────────────────────────────────────────────────
 
 function PlaceholderScreen({ title, icon }) {
@@ -902,7 +1183,7 @@ export default function LexStarApp() {
                 filteredArticles={filteredArticles}
               />
             )}
-            {activeNav === "markets" && <PlaceholderScreen title="Markets"  icon="▲" />}
+            {activeNav === "markets" && <MarketsScreen />}
             {activeNav === "archive" && <PlaceholderScreen title="Archive"  icon="⊟" />}
             {activeNav === "profile" && <PlaceholderScreen title="Profile"  icon="○" />}
           </div>
