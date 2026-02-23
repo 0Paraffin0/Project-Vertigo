@@ -1,12 +1,17 @@
 /*
- * LEXSTAR — Phase 3
- * Markets Screen · Exchange tabs · Index card · Sparklines · Top movers · Market news
+ * LEXSTAR — Phase 4
+ * Archive Screen · Week navigation · Keyword search · Category pills · useMemo filtering
  *
- * Builds on Phase 2: replaces the Markets placeholder with a fully-functional
- * exchange view. Static data lives in src/markets.js (replaced by live feeds in Phase 7).
+ * Builds on Phase 3: replaces the Archive placeholder with a searchable, filterable
+ * archive of past articles. Static data in src/archive.js; Phase 7 adds live queries.
  */
-import { useState } from "react";
+/*
+ * LEXSTAR — Phase 4
+ * Archive Screen · Week navigation · Keyword search · Category pills · useMemo filtering
+ */
+import { useState, useMemo } from "react";
 import { EXCHANGES, MARKET_MOVERS, MARKET_NEWS } from "./markets.js";
+import { ARCHIVE_ARTICLES } from "./archive.js";
 
 // ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
 const C = {
@@ -1058,6 +1063,190 @@ function MarketsScreen() {
   );
 }
 
+// ─── PHASE 4: ARCHIVE SCREEN ─────────────────────────────────────────────────
+
+// Returns the Monday of the week containing `date`
+function weekStart(date) {
+  const d = new Date(date);
+  const day = d.getDay(); // 0 = Sun
+  const diff = (day === 0 ? -6 : 1) - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function formatWeekRange(monday) {
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const opts = { day: "numeric", month: "short" };
+  return `${monday.toLocaleDateString("en-GB", opts)} – ${sunday.toLocaleDateString("en-GB", opts)}`;
+}
+
+// Build sorted list of distinct week start dates from the archive
+const ARCHIVE_WEEKS = [...new Set(
+  ARCHIVE_ARTICLES.map(a => weekStart(new Date(a.date)).toISOString())
+)].sort((a, b) => new Date(b) - new Date(a)).map(iso => new Date(iso));
+
+const ARCHIVE_CATEGORIES = ["breaking", "legal", "markets", "finance"];
+
+function ArchiveScreen({ plan, detailLevel }) {
+  const [weekIndex, setWeekIndex]     = useState(0);   // 0 = most recent
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCats, setActiveCats]   = useState([]);
+
+  const currentWeek = ARCHIVE_WEEKS[weekIndex];
+
+  const toggleCat = (cat) =>
+    setActiveCats(prev =>
+      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+    );
+
+  const filteredArticles = useMemo(() => {
+    const weekEnd = new Date(currentWeek);
+    weekEnd.setDate(currentWeek.getDate() + 7);
+
+    const q = searchQuery.trim().toLowerCase();
+
+    return ARCHIVE_ARTICLES.filter(a => {
+      const articleDate = new Date(a.date);
+      if (articleDate < currentWeek || articleDate >= weekEnd) return false;
+      if (activeCats.length > 0 && !activeCats.includes(a.category)) return false;
+      if (q && !a.headline.toLowerCase().includes(q) && !a.tags.some(t => t.toLowerCase().includes(q)))
+        return false;
+      return true;
+    });
+  }, [currentWeek, searchQuery, activeCats]);
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto" }}>
+      {/* Sticky header */}
+      <div style={{
+        position: "sticky", top: 0, background: C.bg,
+        borderBottom: `1px solid ${C.border}`, zIndex: 10,
+        padding: "14px 20px 12px",
+      }}>
+        {/* Week navigation */}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12,
+        }}>
+          <button
+            onClick={() => setWeekIndex(i => Math.min(i + 1, ARCHIVE_WEEKS.length - 1))}
+            disabled={weekIndex >= ARCHIVE_WEEKS.length - 1}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              fontSize: 18, color: weekIndex >= ARCHIVE_WEEKS.length - 1 ? C.textDim : C.textMid,
+              padding: "4px 8px",
+            }}
+          >‹</button>
+
+          <div style={{ textAlign: "center" }}>
+            <p style={{
+              fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: C.textDim,
+              fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase",
+            }}>Archive</p>
+            <p style={{
+              fontFamily: "'DM Serif Display', serif", fontSize: 16, color: C.gold,
+            }}>{formatWeekRange(currentWeek)}</p>
+          </div>
+
+          <button
+            onClick={() => setWeekIndex(i => Math.max(i - 1, 0))}
+            disabled={weekIndex === 0}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              fontSize: 18, color: weekIndex === 0 ? C.textDim : C.textMid,
+              padding: "4px 8px",
+            }}
+          >›</button>
+        </div>
+
+        {/* Search bar */}
+        <div style={{
+          display: "flex", alignItems: "center",
+          background: C.surface, border: `1px solid ${C.border}`,
+          borderRadius: 8, padding: "8px 12px", gap: 8, marginBottom: 12,
+        }}>
+          <span style={{ fontSize: 13, color: C.textDim }}>⌕</span>
+          <input
+            type="text"
+            placeholder="Search headlines, tags…"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{
+              flex: 1, background: "none", border: "none", outline: "none",
+              fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: C.text,
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                fontSize: 12, color: C.textMid, padding: 0,
+              }}
+            >× Clear</button>
+          )}
+        </div>
+
+        {/* Category pills */}
+        <div style={{ display: "flex", gap: 7, overflowX: "auto", paddingBottom: 2, scrollbarWidth: "none" }}>
+          {ARCHIVE_CATEGORIES.map(cat => {
+            const active = activeCats.includes(cat);
+            const color  = CATEGORY_COLORS[cat] || C.gold;
+            return (
+              <span
+                key={cat}
+                className="tag-chip"
+                onClick={() => toggleCat(cat)}
+                style={{
+                  borderColor: active ? color : C.border,
+                  color:       active ? color : C.textMid,
+                  background:  active ? `${color}15` : "transparent",
+                  fontSize: 11,
+                }}
+              >
+                {cat.charAt(0).toUpperCase() + cat.slice(1)}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Article list */}
+      <div style={{ padding: "0 20px" }}>
+        {filteredArticles.length > 0
+          ? filteredArticles.map((a, i) => (
+              <div key={a.id} style={{ animationDelay: `${i * 0.05}s` }}>
+                <ArticleCard article={a} plan={plan} detailLevel={detailLevel} />
+              </div>
+            ))
+          : (
+            <div style={{
+              textAlign: "center", padding: "60px 20px",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
+            }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 14,
+                background: C.surface, border: `1px solid ${C.border}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 22, color: C.textDim,
+              }}>⊟</div>
+              <p style={{ fontSize: 14, color: C.text, fontFamily: "'DM Serif Display', serif" }}>
+                No articles found
+              </p>
+              <p style={{ fontSize: 12, color: C.textMid, fontFamily: "'DM Sans', sans-serif" }}>
+                {searchQuery
+                  ? `No results for "${searchQuery}"`
+                  : "Try a different week or clear filters"}
+              </p>
+            </div>
+          )
+        }
+      </div>
+    </div>
+  );
+}
+
 // ─── PLACEHOLDER SCREENS ──────────────────────────────────────────────────────
 
 function PlaceholderScreen({ title, icon }) {
@@ -1184,7 +1373,7 @@ export default function LexStarApp() {
               />
             )}
             {activeNav === "markets" && <MarketsScreen />}
-            {activeNav === "archive" && <PlaceholderScreen title="Archive"  icon="⊟" />}
+            {activeNav === "archive" && <ArchiveScreen plan={plan} detailLevel={detailLevel} />}
             {activeNav === "profile" && <PlaceholderScreen title="Profile"  icon="○" />}
           </div>
 
