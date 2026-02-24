@@ -5,9 +5,9 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SPACING, RADIUS, FONTS, CATEGORY_COLORS } from '../../src/constants/theme';
 import { MOCK_ARTICLES } from '../../src/data/mockArticles';
