@@ -21,10 +21,10 @@ const PLANS = [
     tagline: 'Personalised briefings for tomorrow\'s professionals',
     accent: COLORS.student,
     features: [
-      'Core daily briefings',
-      'Sector personalisation',
-      'Study-relevant stories',
-      'Career & recruitment news',
+      'Essential daily briefings',
+      'Sector-tailored insights',
+      'Stories aligned with your studies',
+      'Career and recruitment intelligence',
     ],
   },
   {
@@ -85,11 +85,15 @@ export default function PlanScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
 
+      <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
+        <Text style={styles.backArrow}>←</Text>
+      </TouchableOpacity>
+
       <ProgressBar step={2} total={6} milestone="Your Plan" nextMilestone="Your Field" />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <Text style={styles.heading}>Choose your plan</Text>
-        <Text style={styles.subheading}>You can switch or upgrade at any time</Text>
+        <Text style={styles.subheading}>You can upgrade at any time</Text>
 
         {PLANS.map((plan) => (
           <PlanCard
@@ -116,6 +120,17 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.bg,
+  },
+  backBtn: {
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.sm,
+    paddingBottom: 0,
+    alignSelf: 'flex-start',
+  },
+  backArrow: {
+    fontFamily: FONTS.sans,
+    fontSize: 22,
+    color: COLORS.textMid,
   },
   scroll: {
     flex: 1,

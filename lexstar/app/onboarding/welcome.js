@@ -23,18 +23,18 @@ export default function WelcomeScreen() {
 
         {/* Tagline */}
         <Text style={styles.tagline}>
-          News that matters.{'\n'}For those who act on it.
+          News that matters.{'\n'}Without the noise.
         </Text>
 
         {/* Description */}
         <Text style={styles.description}>
-          AI-curated briefings for legal and financial professionals — personalised to your industry, role and experience.
+          From classroom to corner office — AI-curated briefings for legal and financial professionals, personalised to your industry, role and experience.
         </Text>
 
         {/* Feature highlights */}
         <View style={styles.features}>
           {[
-            { icon: '⚡', label: 'Breaking stories first' },
+            { icon: '⚡', label: 'Breaking stories down' },
             { icon: '✓', label: 'Multi-source verified' },
             { icon: '◈', label: 'Tailored to your sector' },
           ].map((feature) => (
@@ -52,9 +52,6 @@ export default function WelcomeScreen() {
           label="Get Started →"
           onPress={() => router.push('/onboarding/plan')}
         />
-        <Text style={styles.footerNote}>
-          Takes about 2 minutes · No account required yet
-        </Text>
       </View>
     </SafeAreaView>
   );

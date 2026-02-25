@@ -58,6 +58,10 @@ export default function FeedPrefsScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
 
+      <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
+        <Text style={styles.backArrow}>←</Text>
+      </TouchableOpacity>
+
       <ProgressBar step={4} total={6} milestone="Your Feed" nextMilestone="Notifications" />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
@@ -116,6 +120,17 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.bg,
+  },
+  backBtn: {
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.sm,
+    paddingBottom: 0,
+    alignSelf: 'flex-start',
+  },
+  backArrow: {
+    fontFamily: FONTS.sans,
+    fontSize: 22,
+    color: COLORS.textMid,
   },
   scroll: {
     flex: 1,
