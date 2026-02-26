@@ -1,11 +1,26 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { COLORS, RADIUS, SPACING, FONTS, CATEGORY_COLORS } from '../constants/theme';
 import TagChip from './TagChip';
+import { FINANCE_SECTORS, LAW_SECTORS } from '../data/sectors';
 
-export default function ArticleCard({ article, detailLevel, isExpanded, onPress }) {
+const ALL_SECTORS = [...FINANCE_SECTORS, ...LAW_SECTORS];
+
+export default function ArticleCard({ article, detailLevel, isExpanded, onPress, plan, userSectors = [] }) {
   const categoryColor = CATEGORY_COLORS[article.category] || COLORS.gold;
-  const isBreaking = article.category === 'breaking';
+  const isBreaking = article.breaking || article.category === 'breaking';
+  const accentColor = plan === 'pro' ? COLORS.gold : COLORS.student;
+
+  const matchingSector = userSectors.length > 0
+    ? ALL_SECTORS.find((s) => (article.sectorIds || []).includes(s.id) && userSectors.includes(s.id))
+    : ALL_SECTORS.find((s) => (article.sectorIds || []).includes(s.id));
+
+  const displayTags = (article.tags || []).slice(0, 3);
+
+  const handleSourcePress = (source) => {
+    const url = "https://www.google.com/search?q=" + encodeURIComponent(source + " " + article.headline);
+    Linking.openURL(url).catch(() => {});
+  };
 
   return (
     <TouchableOpacity
@@ -13,7 +28,6 @@ export default function ArticleCard({ article, detailLevel, isExpanded, onPress 
       activeOpacity={0.85}
       style={[styles.card, isExpanded && styles.cardExpanded]}
     >
-      {/* Top row: category + breaking badge + time */}
       <View style={styles.topRow}>
         <View style={styles.topLeft}>
           <View style={[styles.categoryDot, { backgroundColor: categoryColor }]} />
@@ -29,27 +43,44 @@ export default function ArticleCard({ article, detailLevel, isExpanded, onPress 
         <Text style={styles.time}>{article.time}</Text>
       </View>
 
-      {/* Headline */}
       <Text style={styles.headline}>{article.headline}</Text>
 
-      {/* Brief — shown when detailLevel >= 1 */}
-      {detailLevel >= 1 && (
+      {detailLevel >= 1 && article.brief && (
         <Text style={styles.brief}>{article.brief}</Text>
       )}
 
-      {/* Feed label */}
-      <Text style={styles.feedLabel}>◈ In your feed · {article.sector}</Text>
+      {matchingSector && (
+        <View style={styles.feedLabelRow}>
+          <Text style={[styles.feedLabel, { color: accentColor }]}>
+            {◈} In your feed · {matchingSector.label}
+          </Text>
+        </View>
+      )}
 
-      {/* Verified line */}
+      {detailLevel === 2 && (
+        <View style={[styles.noteBox, { backgroundColor: accentColor + "14", borderColor: accentColor + "44" }]}>
+          {plan === 'pro' ? (
+            <>
+              <Text style={[styles.noteLabel, { color: accentColor }]}>⚖ Pro Note</Text>
+              <Text style={styles.noteText}>{article.proNote}</Text>
+            </>
+          ) : (
+            <>
+              <Text style={[styles.noteLabel, { color: accentColor }]}>🎓 Student Note</Text>
+              <Text style={styles.noteText}>{article.studentNote}</Text>
+            </>
+          )}
+        </View>
+      )}
+
       {article.verified && (
         <Text style={styles.verified}>
-          ✓ Verified — {article.sources.join(' · ')}
+          ✓ Verified — {(article.sources || []).join(' · ')}
         </Text>
       )}
 
-      {/* Tags */}
       <View style={styles.tagsRow}>
-        {article.tags.map((tag) => (
+        {displayTags.map((tag) => (
           <TagChip
             key={tag}
             label={tag}
@@ -58,15 +89,19 @@ export default function ArticleCard({ article, detailLevel, isExpanded, onPress 
         ))}
       </View>
 
-      {/* Read originals — shown only when expanded */}
       {isExpanded && (
         <View style={styles.originalsRow}>
           <Text style={styles.originalsLabel}>Read originals →</Text>
           <View style={styles.sourceLinks}>
-            {article.sources.map((src) => (
-              <View key={src} style={[styles.sourceChip, { borderColor: categoryColor }]}>
+            {(article.sources || []).map((src) => (
+              <TouchableOpacity
+                key={src}
+                onPress={() => handleSourcePress(src)}
+                activeOpacity={0.7}
+                style={[styles.sourceChip, { borderColor: categoryColor }]}
+              >
                 <Text style={[styles.sourceText, { color: categoryColor }]}>{src}</Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         </View>
@@ -129,23 +164,43 @@ const styles = StyleSheet.create({
   },
   headline: {
     fontFamily: FONTS.serif,
-    fontSize: 18,
+    fontSize: 17,
     lineHeight: 24,
     color: COLORS.text,
     marginBottom: SPACING.sm,
   },
   brief: {
     fontFamily: FONTS.sans,
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 13,
+    lineHeight: 20,
     color: COLORS.textMid,
     marginBottom: SPACING.sm,
+  },
+  feedLabelRow: {
+    marginBottom: SPACING.xs,
   },
   feedLabel: {
     fontFamily: FONTS.sans,
     fontSize: 11,
-    color: COLORS.textDim,
-    marginBottom: SPACING.xs,
+    fontWeight: '600',
+  },
+  noteBox: {
+    borderWidth: 1,
+    borderRadius: RADIUS.sm,
+    padding: SPACING.sm,
+    marginBottom: SPACING.sm,
+    gap: 4,
+  },
+  noteLabel: {
+    fontFamily: FONTS.sans,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  noteText: {
+    fontFamily: FONTS.sans,
+    fontSize: 12,
+    color: COLORS.textMid,
+    lineHeight: 18,
   },
   verified: {
     fontFamily: FONTS.sans,

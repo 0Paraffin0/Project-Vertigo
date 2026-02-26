@@ -8,9 +8,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { router } from 'expo-router';
 import { COLORS, SPACING, RADIUS, FONTS } from '../../src/constants/theme';
 import { MOCK_ARTICLES } from '../../src/data/mockArticles';
 import ArticleCard from '../../src/components/ArticleCard';
+import { useUser } from '../../src/context/UserContext';
+import { filterArticles, sortArticles } from '../../src/utils/feedFilter';
 
 function LiveDot() {
   const [visible, setVisible] = useState(true);
@@ -33,6 +36,7 @@ function getCurrentTime() {
 const DETAIL_LEVELS = ['Headlines', 'Brief', 'Full'];
 
 export default function FeedScreen() {
+  const { user } = useUser();
   const [detailLevel, setDetailLevel] = useState(0);
   const [expandedId, setExpandedId] = useState(null);
   const [currentTime, setCurrentTime] = useState(getCurrentTime());
@@ -45,6 +49,9 @@ export default function FeedScreen() {
   const handleCardPress = (id) => {
     setExpandedId((prev) => (prev === id ? null : id));
   };
+
+  const filtered = sortArticles(filterArticles(MOCK_ARTICLES, user));
+  const accentColor = user.plan === 'pro' ? COLORS.gold : COLORS.student;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -64,6 +71,11 @@ export default function FeedScreen() {
           <LiveDot />
           <Text style={styles.liveText}>LIVE</Text>
           <Text style={styles.timeText}>{currentTime}</Text>
+          <View style={[styles.countPill, { borderColor: accentColor }]}>
+            <Text style={[styles.countText, { color: accentColor }]}>
+              {filtered.length} stories
+            </Text>
+          </View>
         </View>
 
         {/* Detail level toggle */}
@@ -91,23 +103,39 @@ export default function FeedScreen() {
         </View>
       </View>
 
-      {/* Articles */}
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {MOCK_ARTICLES.map((article) => (
-          <ArticleCard
-            key={article.id}
-            article={article}
-            detailLevel={detailLevel}
-            isExpanded={expandedId === article.id}
-            onPress={() => handleCardPress(article.id)}
-          />
-        ))}
-        <View style={styles.bottomPad} />
-      </ScrollView>
+      {/* Articles or empty state */}
+      {filtered.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyTitle}>No stories match your current filters</Text>
+          <Text style={styles.emptySub}>Adjust your feed preferences in Profile</Text>
+          <TouchableOpacity
+            style={[styles.emptyButton, { borderColor: accentColor }]}
+            activeOpacity={0.7}
+            onPress={() => router.replace('/(tabs)/profile')}
+          >
+            <Text style={[styles.emptyButtonText, { color: accentColor }]}>Go to Profile</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {filtered.map((article) => (
+            <ArticleCard
+              key={article.id}
+              article={article}
+              detailLevel={detailLevel}
+              isExpanded={expandedId === article.id}
+              onPress={() => handleCardPress(article.id)}
+              plan={user.plan}
+              userSectors={user.sectors}
+            />
+          ))}
+          <View style={styles.bottomPad} />
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -180,6 +208,18 @@ const styles = StyleSheet.create({
     color: COLORS.textMid,
     marginLeft: SPACING.xs,
   },
+  countPill: {
+    borderWidth: 1,
+    borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 2,
+    marginLeft: SPACING.xs,
+  },
+  countText: {
+    fontFamily: FONTS.sans,
+    fontSize: 10,
+    fontWeight: '600',
+  },
   toggleRow: {
     flexDirection: 'row',
     backgroundColor: COLORS.surface,
@@ -217,5 +257,41 @@ const styles = StyleSheet.create({
   },
   bottomPad: {
     height: SPACING.xl,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.xl,
+    gap: SPACING.md,
+  },
+  emptyTitle: {
+    fontFamily: FONTS.sans,
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  emptySub: {
+    fontFamily: FONTS.sans,
+    fontSize: 14,
+    color: COLORS.textMid,
+    textAlign: 'center',
+    lineHeight: 21,
+  },
+  emptyButton: {
+    borderWidth: 1,
+    borderRadius: RADIUS.sm,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    marginTop: SPACING.xs,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  emptyButtonText: {
+    fontFamily: FONTS.sans,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

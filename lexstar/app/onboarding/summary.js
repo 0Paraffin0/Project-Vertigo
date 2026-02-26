@@ -14,6 +14,12 @@ import ProgressBar from '../../src/components/ProgressBar';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import PlanBadge from '../../src/components/PlanBadge';
 import TagChip from '../../src/components/TagChip';
+import { useUser } from '../../src/context/UserContext';
+import { FINANCE_SECTORS, LAW_SECTORS } from '../../src/data/sectors';
+import { REGIONS } from '../../src/data/regions';
+import { FEED_PREFS } from '../../src/data/feedPrefs';
+
+const ALL_SECTORS = [...FINANCE_SECTORS, ...LAW_SECTORS];
 
 function SummaryRow({ label, children }) {
   return (
@@ -24,7 +30,42 @@ function SummaryRow({ label, children }) {
   );
 }
 
+function getNotifLabel(notifPref) {
+  const map = {
+    realtime: 'Real-time',
+    morning: 'Morning · 7:00 AM',
+    evening: 'Evening · 6:00 PM',
+    weekly: 'Weekly · Fridays 5:00 PM',
+  };
+  return map[notifPref] || 'Morning · 7:00 AM';
+}
+
 export default function SummaryScreen() {
+  const { user, updateUser } = useUser();
+
+  const selectedSectorLabels = user.sectors
+    .map((id) => ALL_SECTORS.find((s) => s.id === id)?.label)
+    .filter(Boolean);
+
+  const selectedRegionLabels = user.regions
+    .map((id) => REGIONS.find((r) => r.id === id)?.label)
+    .filter(Boolean);
+
+  const storyCount = Math.min(
+    Math.max(
+      user.sectors.length * 3 + user.feedPrefs.length * 2 + user.regions.length * 4,
+      14,
+    ),
+    94,
+  );
+
+  const fieldLabel = user.field === 'law' ? 'Law' : 'Finance';
+
+  const handleOpen = () => {
+    updateUser({ hasOnboarded: true });
+    router.replace('/(tabs)/feed');
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
@@ -41,40 +82,44 @@ export default function SummaryScreen() {
           <Text style={styles.celebrationIcon}>✦</Text>
           <Text style={styles.celebrationTitle}>You're all set</Text>
           <Text style={styles.celebrationSub}>
-            Your personalised feed is ready. Here's what we've configured for you.
+            Your personalised feed is ready. {storyCount} stories matched your profile.
           </Text>
         </View>
 
         {/* Summary card */}
         <View style={styles.summaryCard}>
           <SummaryRow label="PLAN">
-            <PlanBadge plan="student" />
+            <PlanBadge plan={user.plan || 'student'} />
           </SummaryRow>
 
           <SummaryRow label="FIELD">
             <View style={styles.chipsRow}>
-              <TagChip label="Finance" accentColor={COLORS.gold} active />
+              <TagChip label={fieldLabel} accentColor={COLORS.gold} active />
             </View>
           </SummaryRow>
 
           <SummaryRow label="SECTORS">
             <View style={styles.chipsRow}>
-              {['Trading & Markets', 'Asset Management'].map((s) => (
-                <TagChip key={s} label={s} accentColor={COLORS.gold} active />
-              ))}
+              {selectedSectorLabels.length > 0
+                ? selectedSectorLabels.map((s) => (
+                    <TagChip key={s} label={s} accentColor={COLORS.gold} active />
+                  ))
+                : <Text style={styles.noneText}>None selected</Text>}
             </View>
           </SummaryRow>
 
           <SummaryRow label="REGIONS">
             <View style={styles.chipsRow}>
-              {['United Kingdom', 'United States'].map((r) => (
-                <TagChip key={r} label={r} accentColor={COLORS.gold} active />
-              ))}
+              {selectedRegionLabels.length > 0
+                ? selectedRegionLabels.map((r) => (
+                    <TagChip key={r} label={r} accentColor={COLORS.gold} active />
+                  ))
+                : <Text style={styles.noneText}>All regions</Text>}
             </View>
           </SummaryRow>
 
           <SummaryRow label="DIGEST">
-            <Text style={styles.summaryValue}>Morning · 7:00 AM</Text>
+            <Text style={styles.summaryValue}>{getNotifLabel(user.notifPref)}</Text>
           </SummaryRow>
 
           <SummaryRow label="BREAKING ALERTS">
@@ -93,7 +138,7 @@ export default function SummaryScreen() {
       <View style={styles.footer}>
         <PrimaryButton
           label="Open LexStar →"
-          onPress={() => router.replace('/(tabs)/feed')}
+          onPress={handleOpen}
         />
       </View>
     </SafeAreaView>
@@ -178,6 +223,12 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.sans,
     fontSize: 14,
     color: COLORS.text,
+    paddingTop: 2,
+  },
+  noneText: {
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    color: COLORS.textDim,
     paddingTop: 2,
   },
   chipsRow: {

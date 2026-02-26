@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 import { COLORS, SPACING, RADIUS, FONTS } from '../../src/constants/theme';
 import ProgressBar from '../../src/components/ProgressBar';
 import PrimaryButton from '../../src/components/PrimaryButton';
+import { useUser } from '../../src/context/UserContext';
 
 const PLANS = [
   {
@@ -78,6 +79,7 @@ function PlanCard({ plan, selected, onSelect }) {
 }
 
 export default function PlanScreen() {
+  const { updateUser } = useUser();
   const [selectedPlan, setSelectedPlan] = useState('student');
   const activePlan = PLANS.find((p) => p.id === selectedPlan);
 
@@ -109,7 +111,10 @@ export default function PlanScreen() {
         <PrimaryButton
           label="Continue →"
           accentColor={activePlan.accent}
-          onPress={() => router.push('/onboarding/industry')}
+          onPress={() => {
+            updateUser({ plan: selectedPlan });
+            router.push('/onboarding/industry');
+          }}
         />
       </View>
     </SafeAreaView>

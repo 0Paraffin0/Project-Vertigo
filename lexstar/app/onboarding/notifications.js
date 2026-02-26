@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { COLORS, SPACING, RADIUS, FONTS } from '../../src/constants/theme';
 import ProgressBar from '../../src/components/ProgressBar';
 import PrimaryButton from '../../src/components/PrimaryButton';
+import { useUser } from '../../src/context/UserContext';
 
 const LIGHT = {
   bg: '#F8F6F1',
@@ -31,9 +32,10 @@ const FREQUENCIES = [
 ];
 
 export default function NotificationsScreen() {
-  const [frequency, setFrequency] = useState('morning');
+  const { user, updateUser } = useUser();
+  const [frequency, setFrequency] = useState(user.notifPref || 'morning');
   const [breakingAlerts, setBreakingAlerts] = useState(true);
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(user.darkMode !== undefined ? user.darkMode : true);
 
   const C = darkMode ? COLORS : { ...COLORS, ...LIGHT };
 
@@ -102,7 +104,7 @@ export default function NotificationsScreen() {
             </View>
             <Switch
               value={darkMode}
-              onValueChange={setDarkMode}
+              onValueChange={(val) => { setDarkMode(val); updateUser({ darkMode: val }); }}
               trackColor={{ false: C.border, true: COLORS.gold + '66' }}
               thumbColor={darkMode ? COLORS.gold : COLORS.textDim}
             />
@@ -113,7 +115,10 @@ export default function NotificationsScreen() {
       <View style={styles.footer}>
         <PrimaryButton
           label="Continue →"
-          onPress={() => router.push('/onboarding/summary')}
+          onPress={() => {
+            updateUser({ notifPref: frequency, darkMode });
+            router.push('/onboarding/summary');
+          }}
         />
       </View>
     </SafeAreaView>

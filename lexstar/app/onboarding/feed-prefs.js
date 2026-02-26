@@ -16,6 +16,7 @@ import ProgressBar from '../../src/components/ProgressBar';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import GhostButton from '../../src/components/GhostButton';
 import TagChip from '../../src/components/TagChip';
+import { useUser } from '../../src/context/UserContext';
 
 function StoryTypeCard({ pref, active, onToggle }) {
   return (
@@ -39,7 +40,8 @@ function StoryTypeCard({ pref, active, onToggle }) {
 }
 
 export default function FeedPrefsScreen() {
-  const [activePrefs, setActivePrefs] = useState(['breaking', 'regulatory', 'court']);
+  const { updateUser } = useUser();
+  const [activePrefs, setActivePrefs] = useState(['breaking', 'regulatory']);
   const [activeRegions, setActiveRegions] = useState(['uk', 'us']);
 
   const togglePref = (id) => {
@@ -105,11 +107,17 @@ export default function FeedPrefsScreen() {
       <View style={styles.footer}>
         <PrimaryButton
           label="Continue →"
-          onPress={() => router.push('/onboarding/notifications')}
+          onPress={() => {
+            updateUser({ feedPrefs: activePrefs, regions: activeRegions });
+            router.push('/onboarding/notifications');
+          }}
         />
         <GhostButton
           label="Set up later"
-          onPress={() => router.push('/onboarding/notifications')}
+          onPress={() => {
+            updateUser({ feedPrefs: activePrefs, regions: activeRegions });
+            router.push('/onboarding/notifications');
+          }}
         />
       </View>
     </SafeAreaView>

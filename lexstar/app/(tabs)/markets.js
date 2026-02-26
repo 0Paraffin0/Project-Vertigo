@@ -1,42 +1,79 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
+  TouchableOpacity,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS, SPACING, RADIUS, FONTS } from '../../src/constants/theme';
+import { MARKETS } from '../../src/data/mockMarkets';
+import { MOCK_ARTICLES } from '../../src/data/mockArticles';
+import ArticleCard from '../../src/components/ArticleCard';
+import { useUser } from '../../src/context/UserContext';
 
-const EXCHANGES = [
-  { name: 'NYSE', price: '17,842.36', change: '+0.42%', positive: true },
-  { name: 'LSE / FTSE 100', price: '7,612.10', change: '+0.61%', positive: true },
-  { name: 'NASDAQ', price: '15,987.54', change: '-0.18%', positive: false },
-  { name: 'Nikkei 225', price: '38,245.80', change: '+1.12%', positive: true },
-  { name: 'DAX', price: '18,104.66', change: '-0.05%', positive: false },
+const REGION_FILTERS = [
+  { id: null,   label: 'All' },
+  { id: 'us',   label: 'US' },
+  { id: 'uk',   label: 'UK' },
+  { id: 'eu',   label: 'EU' },
+  { id: 'asia', label: 'Asia' },
 ];
 
-function ExchangeRow({ exchange }) {
+function ExchangeRow({ exchange, active, onPress }) {
+  const borderColor = exchange.positive ? COLORS.green : COLORS.red;
   return (
-    <View style={styles.exchangeRow}>
-      <View style={styles.exchangeLeft}>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={[
+        styles.exchangeRow,
+        active && styles.exchangeRowActive,
+      ]}
+    >
+      <View style={[styles.exchangeLeftBorder, { backgroundColor: borderColor }]} />
+      <View style={styles.exchangeInfo}>
         <Text style={styles.exchangeName}>{exchange.name}</Text>
-        <Text style={styles.exchangePrice}>{exchange.price}</Text>
+        <Text style={styles.exchangeIndex}>{exchange.index}</Text>
       </View>
-      <Text style={[styles.exchangeChange, { color: exchange.positive ? COLORS.green : COLORS.red }]}>
-        {exchange.change}
-      </Text>
-    </View>
+      <View style={styles.exchangeRight}>
+        <Text style={styles.exchangePrice}>{exchange.price}</Text>
+        <Text style={[styles.exchangeChange, { color: exchange.positive ? COLORS.green : COLORS.red }]}>
+          {exchange.change}
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 }
 
 export default function MarketsScreen() {
+  const { user } = useUser();
+  const [activeRegion, setActiveRegion] = useState(null);
+  const [activeMarketId, setActiveMarketId] = useState(null);
+
   const today = new Date().toLocaleDateString('en-GB', {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
   });
+
+  const filteredMarkets = activeRegion
+    ? MARKETS.filter((m) => m.region === activeRegion)
+    : MARKETS;
+
+  const activeMarket = MARKETS.find((m) => m.id === activeMarketId);
+
+  const relatedArticles = activeMarket
+    ? MOCK_ARTICLES
+        .filter((a) => (a.regionIds || []).includes(activeMarket.region))
+        .slice(0, 3)
+    : [];
+
+  const handleMarketPress = (marketId) => {
+    setActiveMarketId((prev) => (prev === marketId ? null : marketId));
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -48,23 +85,75 @@ export default function MarketsScreen() {
       </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Region filter chips */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterRow}
+          contentContainerStyle={styles.filterRowContent}
+        >
+          {REGION_FILTERS.map((f) => (
+            <TouchableOpacity
+              key={String(f.id)}
+              onPress={() => {
+                setActiveRegion(f.id);
+                setActiveMarketId(null);
+              }}
+              activeOpacity={0.7}
+              style={[
+                styles.filterChip,
+                activeRegion === f.id && styles.filterChipActive,
+              ]}
+            >
+              <Text style={[
+                styles.filterChipText,
+                activeRegion === f.id && styles.filterChipTextActive,
+              ]}>
+                {f.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Exchange list */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionLabel}>GLOBAL EXCHANGES</Text>
-          {EXCHANGES.map((ex) => (
-            <ExchangeRow key={ex.name} exchange={ex} />
+          {filteredMarkets.map((ex) => (
+            <ExchangeRow
+              key={ex.id}
+              exchange={ex}
+              active={activeMarketId === ex.id}
+              onPress={() => handleMarketPress(ex.id)}
+            />
           ))}
         </View>
 
-        <View style={styles.placeholderCard}>
-          <Text style={styles.placeholderIcon}>📊</Text>
-          <Text style={styles.placeholderTitle}>Global exchange data</Text>
-          <Text style={styles.placeholderSub}>Coming in Phase 2</Text>
-        </View>
-
-        <View style={styles.noteCard}>
-          <Text style={styles.noteText}>
-            Tap an exchange to filter your news feed — coming soon
-          </Text>
+        {/* Related news */}
+        <View style={styles.relatedSection}>
+          <Text style={styles.relatedHeader}>Related News</Text>
+          {activeMarket ? (
+            relatedArticles.length > 0 ? (
+              relatedArticles.map((article) => (
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                  detailLevel={0}
+                  isExpanded={false}
+                  onPress={() => {}}
+                  plan={user.plan}
+                  userSectors={user.sectors}
+                />
+              ))
+            ) : (
+              <Text style={styles.noRelatedText}>No stories found for this region</Text>
+            )
+          ) : (
+            <View style={styles.relatedPlaceholder}>
+              <Text style={styles.relatedPlaceholderText}>
+                Select a market above to see related news
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.bottomPad} />
@@ -101,6 +190,38 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
+  filterRow: {
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  filterRowContent: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    gap: SPACING.sm,
+    flexDirection: 'row',
+  },
+  filterChip: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.full,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs + 2,
+    minHeight: 34,
+    justifyContent: 'center',
+  },
+  filterChipActive: {
+    borderColor: COLORS.gold,
+    backgroundColor: COLORS.gold + '18',
+  },
+  filterChipText: {
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    color: COLORS.textMid,
+    fontWeight: '600',
+  },
+  filterChipTextActive: {
+    color: COLORS.gold,
+  },
   sectionCard: {
     margin: SPACING.md,
     backgroundColor: COLORS.surface,
@@ -122,74 +243,85 @@ const styles = StyleSheet.create({
   },
   exchangeRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
+    paddingRight: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
-  exchangeLeft: {
+  exchangeRowActive: {
+    backgroundColor: COLORS.gold + '0C',
+  },
+  exchangeLeftBorder: {
+    width: 3,
+    alignSelf: 'stretch',
+    marginRight: SPACING.sm,
+    borderRadius: 2,
+  },
+  exchangeInfo: {
+    flex: 1,
     gap: 3,
   },
   exchangeName: {
     fontFamily: FONTS.sans,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.text,
+  },
+  exchangeIndex: {
+    fontFamily: FONTS.sans,
+    fontSize: 11,
+    color: COLORS.textMid,
+  },
+  exchangeRight: {
+    alignItems: 'flex-end',
+    gap: 3,
   },
   exchangePrice: {
     fontFamily: FONTS.sans,
-    fontSize: 13,
-    color: COLORS.textMid,
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.text,
   },
   exchangeChange: {
     fontFamily: FONTS.sans,
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '700',
   },
-  placeholderCard: {
+  relatedSection: {
     marginHorizontal: SPACING.md,
     marginBottom: SPACING.md,
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderStyle: 'dashed',
-    padding: SPACING.xl,
-    alignItems: 'center',
-    gap: SPACING.xs,
   },
-  placeholderIcon: {
-    fontSize: 32,
-    marginBottom: SPACING.xs,
-  },
-  placeholderTitle: {
+  relatedHeader: {
     fontFamily: FONTS.sans,
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.textMid,
-  },
-  placeholderSub: {
-    fontFamily: FONTS.sans,
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: '700',
     color: COLORS.textDim,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: SPACING.sm,
   },
-  noteCard: {
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.md,
-    padding: SPACING.md,
+  relatedPlaceholder: {
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.md,
     borderWidth: 1,
     borderColor: COLORS.border,
+    padding: SPACING.lg,
+    alignItems: 'center',
   },
-  noteText: {
+  relatedPlaceholderText: {
     fontFamily: FONTS.sans,
     fontSize: 13,
     color: COLORS.textDim,
     textAlign: 'center',
-    lineHeight: 19,
+    lineHeight: 20,
+  },
+  noRelatedText: {
+    fontFamily: FONTS.sans,
+    fontSize: 13,
+    color: COLORS.textDim,
+    textAlign: 'center',
+    paddingVertical: SPACING.lg,
   },
   bottomPad: {
     height: SPACING.xl,

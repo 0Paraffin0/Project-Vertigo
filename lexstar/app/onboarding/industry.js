@@ -14,6 +14,7 @@ import { FINANCE_SECTORS, LAW_SECTORS } from '../../src/data/sectors';
 import ProgressBar from '../../src/components/ProgressBar';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import GhostButton from '../../src/components/GhostButton';
+import { useUser } from '../../src/context/UserContext';
 
 const FIELDS = [
   { id: 'finance', label: 'Finance', icon: '📈', sectors: FINANCE_SECTORS },
@@ -48,6 +49,7 @@ function SectorGrid({ sectors, selected, onToggle }) {
 }
 
 export default function IndustryScreen() {
+  const { updateUser } = useUser();
   const [activeField, setActiveField] = useState('finance');
   const [selectedSectors, setSelectedSectors] = useState([]);
 
@@ -112,12 +114,18 @@ export default function IndustryScreen() {
       <View style={styles.footer}>
         <PrimaryButton
           label="Continue →"
-          onPress={() => router.push('/onboarding/feed-prefs')}
+          onPress={() => {
+            updateUser({ sectors: selectedSectors, field: activeField });
+            router.push('/onboarding/feed-prefs');
+          }}
           disabled={selectedSectors.length === 0}
         />
         <GhostButton
           label="Set up later"
-          onPress={() => router.push('/onboarding/feed-prefs')}
+          onPress={() => {
+            updateUser({ sectors: selectedSectors, field: activeField });
+            router.push('/onboarding/feed-prefs');
+          }}
         />
       </View>
     </SafeAreaView>
