@@ -52,7 +52,7 @@ export default function ArticleCard({ article, detailLevel, isExpanded, onPress,
       {matchingSector && (
         <View style={styles.feedLabelRow}>
           <Text style={[styles.feedLabel, { color: accentColor }]}>
-            {◈} In your feed · {matchingSector.label}
+            {'◈'} In your feed · {matchingSector.label}
           </Text>
         </View>
       )}
