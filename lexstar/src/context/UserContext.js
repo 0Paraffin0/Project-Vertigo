@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { COLORS, FONTS } from '../constants/theme';
+import { COLORS, FONTS, getColors } from '../constants/theme';
 
 const STORAGE_KEY = '@lexstar_user';
 
@@ -86,6 +86,11 @@ export function useUser() {
   const ctx = useContext(UserContext);
   if (!ctx) throw new Error('useUser must be used inside UserProvider');
   return ctx;
+}
+
+export function useColors() {
+  const { user } = useUser();
+  return getColors(user.darkMode);
 }
 
 const styles = StyleSheet.create({

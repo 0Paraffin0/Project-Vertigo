@@ -1,15 +1,18 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
-import { COLORS, RADIUS, SPACING, FONTS, CATEGORY_COLORS } from '../constants/theme';
+import { RADIUS, SPACING, FONTS, CATEGORY_COLORS } from '../constants/theme';
 import TagChip from './TagChip';
 import { FINANCE_SECTORS, LAW_SECTORS } from '../data/sectors';
+import { useColors } from '../context/UserContext';
 
 const ALL_SECTORS = [...FINANCE_SECTORS, ...LAW_SECTORS];
 
 export default function ArticleCard({ article, detailLevel, isExpanded, onPress, plan, userSectors = [] }) {
-  const categoryColor = CATEGORY_COLORS[article.category] || COLORS.gold;
+  const colors = useColors();
+  const styles = makeStyles(colors);
+  const categoryColor = CATEGORY_COLORS[article.category] || colors.gold;
   const isBreaking = article.breaking || article.category === 'breaking';
-  const accentColor = plan === 'pro' ? COLORS.gold : COLORS.student;
+  const accentColor = plan === 'pro' ? colors.gold : colors.student;
 
   const matchingSector = userSectors.length > 0
     ? ALL_SECTORS.find((s) => (article.sectorIds || []).includes(s.id) && userSectors.includes(s.id))
@@ -110,135 +113,137 @@ export default function ArticleCard({ article, detailLevel, isExpanded, onPress,
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
-  },
-  cardExpanded: {
-    borderColor: COLORS.borderB,
-  },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  topLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-  },
-  categoryDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  categoryLabel: {
-    fontFamily: FONTS.sans,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  breakingBadge: {
-    borderWidth: 1,
-    borderRadius: RADIUS.full,
-    paddingHorizontal: SPACING.xs + 2,
-    paddingVertical: 2,
-  },
-  breakingText: {
-    fontFamily: FONTS.sans,
-    fontSize: 9,
-    fontWeight: '700',
-    color: COLORS.red,
-    letterSpacing: 0.8,
-  },
-  time: {
-    fontFamily: FONTS.sans,
-    fontSize: 11,
-    color: COLORS.textDim,
-  },
-  headline: {
-    fontFamily: FONTS.serif,
-    fontSize: 17,
-    lineHeight: 24,
-    color: COLORS.text,
-    marginBottom: SPACING.sm,
-  },
-  brief: {
-    fontFamily: FONTS.sans,
-    fontSize: 13,
-    lineHeight: 20,
-    color: COLORS.textMid,
-    marginBottom: SPACING.sm,
-  },
-  feedLabelRow: {
-    marginBottom: SPACING.xs,
-  },
-  feedLabel: {
-    fontFamily: FONTS.sans,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  noteBox: {
-    borderWidth: 1,
-    borderRadius: RADIUS.sm,
-    padding: SPACING.sm,
-    marginBottom: SPACING.sm,
-    gap: 4,
-  },
-  noteLabel: {
-    fontFamily: FONTS.sans,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  noteText: {
-    fontFamily: FONTS.sans,
-    fontSize: 12,
-    color: COLORS.textMid,
-    lineHeight: 18,
-  },
-  verified: {
-    fontFamily: FONTS.sans,
-    fontSize: 11,
-    color: COLORS.green,
-    marginBottom: SPACING.sm,
-  },
-  tagsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: SPACING.xs,
-  },
-  originalsRow: {
-    marginTop: SPACING.sm,
-    paddingTop: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-  },
-  originalsLabel: {
-    fontFamily: FONTS.sans,
-    fontSize: 12,
-    color: COLORS.textMid,
-    marginBottom: SPACING.xs,
-  },
-  sourceLinks: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.xs,
-  },
-  sourceChip: {
-    borderWidth: 1,
-    borderRadius: RADIUS.full,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 4,
-  },
-  sourceText: {
-    fontFamily: FONTS.sans,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-});
+function makeStyles(colors) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: SPACING.md,
+      marginBottom: SPACING.sm,
+    },
+    cardExpanded: {
+      borderColor: colors.borderB,
+    },
+    topRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.sm,
+    },
+    topLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.xs,
+    },
+    categoryDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+    },
+    categoryLabel: {
+      fontFamily: FONTS.sans,
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 1,
+    },
+    breakingBadge: {
+      borderWidth: 1,
+      borderRadius: RADIUS.full,
+      paddingHorizontal: SPACING.xs + 2,
+      paddingVertical: 2,
+    },
+    breakingText: {
+      fontFamily: FONTS.sans,
+      fontSize: 9,
+      fontWeight: '700',
+      color: colors.red,
+      letterSpacing: 0.8,
+    },
+    time: {
+      fontFamily: FONTS.sans,
+      fontSize: 11,
+      color: colors.textDim,
+    },
+    headline: {
+      fontFamily: FONTS.serif,
+      fontSize: 17,
+      lineHeight: 24,
+      color: colors.text,
+      marginBottom: SPACING.sm,
+    },
+    brief: {
+      fontFamily: FONTS.sans,
+      fontSize: 13,
+      lineHeight: 20,
+      color: colors.textMid,
+      marginBottom: SPACING.sm,
+    },
+    feedLabelRow: {
+      marginBottom: SPACING.xs,
+    },
+    feedLabel: {
+      fontFamily: FONTS.sans,
+      fontSize: 11,
+      fontWeight: '600',
+    },
+    noteBox: {
+      borderWidth: 1,
+      borderRadius: RADIUS.sm,
+      padding: SPACING.sm,
+      marginBottom: SPACING.sm,
+      gap: 4,
+    },
+    noteLabel: {
+      fontFamily: FONTS.sans,
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    noteText: {
+      fontFamily: FONTS.sans,
+      fontSize: 12,
+      color: colors.textMid,
+      lineHeight: 18,
+    },
+    verified: {
+      fontFamily: FONTS.sans,
+      fontSize: 11,
+      color: colors.green,
+      marginBottom: SPACING.sm,
+    },
+    tagsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      marginTop: SPACING.xs,
+    },
+    originalsRow: {
+      marginTop: SPACING.sm,
+      paddingTop: SPACING.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    originalsLabel: {
+      fontFamily: FONTS.sans,
+      fontSize: 12,
+      color: colors.textMid,
+      marginBottom: SPACING.xs,
+    },
+    sourceLinks: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: SPACING.xs,
+    },
+    sourceChip: {
+      borderWidth: 1,
+      borderRadius: RADIUS.full,
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: 4,
+    },
+    sourceText: {
+      fontFamily: FONTS.sans,
+      fontSize: 11,
+      fontWeight: '600',
+    },
+  });
+}

@@ -1,12 +1,14 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
-import { COLORS, FONTS } from '../../src/constants/theme';
+import { FONTS } from '../../src/constants/theme';
+import { useColors } from '../../src/context/UserContext';
 
-function TabIcon({ focused, icon, label }) {
+function TabIcon({ focused, icon }) {
+  const colors = useColors();
   return (
     <View style={styles.tabIconContainer}>
-      <Text style={[styles.tabIcon, { color: focused ? COLORS.gold : COLORS.textDim }]}>
+      <Text style={[styles.tabIcon, { color: focused ? colors.gold : colors.textDim }]}>
         {icon}
       </Text>
     </View>
@@ -14,20 +16,21 @@ function TabIcon({ focused, icon, label }) {
 }
 
 export default function TabLayout() {
+  const colors = useColors();
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: COLORS.surface,
+          backgroundColor: colors.surface,
           borderTopWidth: 1,
-          borderTopColor: COLORS.border,
+          borderTopColor: colors.border,
           height: 60,
           paddingBottom: 8,
           paddingTop: 6,
         },
-        tabBarActiveTintColor: COLORS.gold,
-        tabBarInactiveTintColor: COLORS.textDim,
+        tabBarActiveTintColor: colors.gold,
+        tabBarInactiveTintColor: colors.textDim,
         tabBarLabelStyle: {
           fontFamily: FONTS.sans,
           fontSize: 10,

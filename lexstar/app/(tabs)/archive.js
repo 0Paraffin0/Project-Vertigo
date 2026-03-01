@@ -9,14 +9,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { COLORS, SPACING, RADIUS, FONTS, CATEGORY_COLORS } from '../../src/constants/theme';
+import { SPACING, RADIUS, FONTS, CATEGORY_COLORS } from '../../src/constants/theme';
 import { MOCK_ARTICLES } from '../../src/data/mockArticles';
 import TagChip from '../../src/components/TagChip';
+import { useColors } from '../../src/context/UserContext';
 
 const TIME_FILTERS = ['Last 7 days', '30 days', '3 months'];
 
 function CondensedCard({ article }) {
-  const categoryColor = CATEGORY_COLORS[article.category] || COLORS.gold;
+  const colors = useColors();
+  const styles = makeStyles(colors);
+  const categoryColor = CATEGORY_COLORS[article.category] || colors.gold;
 
   return (
     <View style={styles.card}>
@@ -40,11 +43,13 @@ function CondensedCard({ article }) {
 }
 
 export default function ArchiveScreen() {
+  const colors = useColors();
+  const styles = makeStyles(colors);
   const [activeFilter, setActiveFilter] = useState(0);
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" />
+      <StatusBar style={colors.text === '#E8E4DC' ? 'light' : 'dark'} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -103,157 +108,159 @@ export default function ArchiveScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  title: {
-    fontFamily: FONTS.serif,
-    fontSize: 24,
-    color: COLORS.text,
-  },
-  searchIcon: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  searchIconText: {
-    fontSize: 22,
-    color: COLORS.textMid,
-  },
-  searchBarContainer: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  searchBar: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm + 2,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  searchPlaceholder: {
-    fontFamily: FONTS.sans,
-    fontSize: 14,
-    color: COLORS.textDim,
-  },
-  filterScroll: {
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  filterContent: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    gap: SPACING.xs,
-  },
-  filterPill: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs + 2,
-    borderRadius: RADIUS.full,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    minHeight: 36,
-    justifyContent: 'center',
-    marginRight: SPACING.xs,
-  },
-  filterPillActive: {
-    borderColor: COLORS.gold,
-    backgroundColor: COLORS.gold + '15',
-  },
-  filterLabel: {
-    fontFamily: FONTS.sans,
-    fontSize: 13,
-    color: COLORS.textDim,
-  },
-  filterLabelActive: {
-    color: COLORS.gold,
-    fontWeight: '600',
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: SPACING.md,
-  },
-  card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: SPACING.md,
-    marginBottom: SPACING.sm,
-  },
-  cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.xs,
-  },
-  cardTopLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  category: {
-    fontFamily: FONTS.sans,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  time: {
-    fontFamily: FONTS.sans,
-    fontSize: 11,
-    color: COLORS.textDim,
-  },
-  headline: {
-    fontFamily: FONTS.serif,
-    fontSize: 16,
-    lineHeight: 22,
-    color: COLORS.text,
-    marginBottom: SPACING.sm,
-  },
-  tagsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  footerNote: {
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.md,
-    padding: SPACING.md,
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-  },
-  footerText: {
-    fontFamily: FONTS.sans,
-    fontSize: 12,
-    color: COLORS.textDim,
-  },
-  bottomPad: {
-    height: SPACING.xl,
-  },
-});
+function makeStyles(colors) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: SPACING.md,
+      paddingTop: SPACING.md,
+      paddingBottom: SPACING.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    title: {
+      fontFamily: FONTS.serif,
+      fontSize: 24,
+      color: colors.text,
+    },
+    searchIcon: {
+      width: 44,
+      height: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    searchIconText: {
+      fontSize: 22,
+      color: colors.textMid,
+    },
+    searchBarContainer: {
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    searchBar: {
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm + 2,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    searchPlaceholder: {
+      fontFamily: FONTS.sans,
+      fontSize: 14,
+      color: colors.textDim,
+    },
+    filterScroll: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    filterContent: {
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      gap: SPACING.xs,
+    },
+    filterPill: {
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.xs + 2,
+      borderRadius: RADIUS.full,
+      borderWidth: 1,
+      borderColor: colors.border,
+      minHeight: 36,
+      justifyContent: 'center',
+      marginRight: SPACING.xs,
+    },
+    filterPillActive: {
+      borderColor: colors.gold,
+      backgroundColor: colors.gold + '15',
+    },
+    filterLabel: {
+      fontFamily: FONTS.sans,
+      fontSize: 13,
+      color: colors.textDim,
+    },
+    filterLabelActive: {
+      color: colors.gold,
+      fontWeight: '600',
+    },
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: SPACING.md,
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: SPACING.md,
+      marginBottom: SPACING.sm,
+    },
+    cardTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.xs,
+    },
+    cardTopLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.xs,
+    },
+    dot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+    },
+    category: {
+      fontFamily: FONTS.sans,
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 1,
+    },
+    time: {
+      fontFamily: FONTS.sans,
+      fontSize: 11,
+      color: colors.textDim,
+    },
+    headline: {
+      fontFamily: FONTS.serif,
+      fontSize: 16,
+      lineHeight: 22,
+      color: colors.text,
+      marginBottom: SPACING.sm,
+    },
+    tagsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    footerNote: {
+      marginHorizontal: SPACING.md,
+      marginBottom: SPACING.md,
+      padding: SPACING.md,
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+    },
+    footerText: {
+      fontFamily: FONTS.sans,
+      fontSize: 12,
+      color: colors.textDim,
+    },
+    bottomPad: {
+      height: SPACING.xl,
+    },
+  });
+}

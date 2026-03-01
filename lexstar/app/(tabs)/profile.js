@@ -11,10 +11,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
-import { COLORS, SPACING, RADIUS, FONTS } from '../../src/constants/theme';
+import { SPACING, RADIUS, FONTS } from '../../src/constants/theme';
 import PlanBadge from '../../src/components/PlanBadge';
 import TagChip from '../../src/components/TagChip';
-import { useUser } from '../../src/context/UserContext';
+import { useUser, useColors } from '../../src/context/UserContext';
 import { FINANCE_SECTORS, LAW_SECTORS } from '../../src/data/sectors';
 import { REGIONS } from '../../src/data/regions';
 import { FEED_PREFS } from '../../src/data/feedPrefs';
@@ -26,13 +26,11 @@ const PLAN_META = {
     icon: '🎓',
     name: 'Student Plan',
     tagline: "Personalised briefings for tomorrow's professionals",
-    accentColor: COLORS.student,
   },
   pro: {
     icon: '⚡',
     name: 'Professional Plan',
     tagline: 'Intelligence for practitioners who need the edge',
-    accentColor: COLORS.gold,
   },
 };
 
@@ -67,9 +65,11 @@ function SettingRow({ label, value, right, last }) {
 
 export default function ProfileScreen() {
   const { user, updateUser, resetUser } = useUser();
+  const colors = useColors();
+  const styles = makeStyles(colors);
 
   const planMeta = PLAN_META[user.plan] || PLAN_META.student;
-  const accentColor = planMeta.accentColor;
+  const accentColor = user.plan === 'pro' ? colors.gold : colors.student;
 
   const sectorLabels = user.sectors
     .map((id) => ALL_SECTORS.find((s) => s.id === id)?.label)
@@ -263,175 +263,177 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-  },
-  header: {
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  title: {
-    fontFamily: FONTS.serif,
-    fontSize: 24,
-    color: COLORS.text,
-  },
-  scroll: {
-    flex: 1,
-  },
-  planCard: {
-    margin: SPACING.md,
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    padding: SPACING.md,
-    gap: SPACING.md,
-  },
-  planTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  planInfo: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: SPACING.sm,
-    flex: 1,
-  },
-  planIcon: {
-    fontSize: 28,
-  },
-  planText: {
-    flex: 1,
-    gap: 3,
-  },
-  planName: {
-    fontFamily: FONTS.sans,
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.text,
-  },
-  planTagline: {
-    fontFamily: FONTS.sans,
-    fontSize: 12,
-    color: COLORS.textMid,
-    lineHeight: 17,
-  },
-  switchPlanButton: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: RADIUS.sm,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    alignItems: 'center',
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  switchPlanText: {
-    fontFamily: FONTS.sans,
-    fontSize: 13,
-    color: COLORS.textMid,
-  },
-  section: {
-    marginHorizontal: SPACING.md,
-    marginBottom: SPACING.md,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  sectionHeader: {
-    fontFamily: FONTS.sans,
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.textDim,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-  },
-  editLink: {
-    fontFamily: FONTS.sans,
-    fontSize: 13,
-    color: COLORS.gold,
-    fontWeight: '600',
-  },
-  chipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  chipsScrollContent: {
-    flexDirection: 'row',
-    gap: SPACING.xs,
-    paddingRight: SPACING.md,
-  },
-  emptyText: {
-    fontFamily: FONTS.sans,
-    fontSize: 13,
-    color: COLORS.textDim,
-    textDecorationLine: 'underline',
-  },
-  settingsCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    overflow: 'hidden',
-  },
-  settingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    minHeight: 52,
-  },
-  settingRowLast: {
-    borderBottomWidth: 0,
-  },
-  settingLabel: {
-    fontFamily: FONTS.sans,
-    fontSize: 14,
-    color: COLORS.text,
-  },
-  settingValue: {
-    fontFamily: FONTS.sans,
-    fontSize: 13,
-    color: COLORS.textMid,
-  },
-  settingValueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
-  changeLink: {
-    fontFamily: FONTS.sans,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  resetButton: {
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.red + '66',
-    paddingVertical: SPACING.md,
-    alignItems: 'center',
-    minHeight: 52,
-    justifyContent: 'center',
-  },
-  resetText: {
-    fontFamily: FONTS.sans,
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.red,
-  },
-  bottomPad: {
-    height: SPACING.xl,
-  },
-});
+function makeStyles(colors) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    header: {
+      paddingHorizontal: SPACING.md,
+      paddingTop: SPACING.md,
+      paddingBottom: SPACING.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    title: {
+      fontFamily: FONTS.serif,
+      fontSize: 24,
+      color: colors.text,
+    },
+    scroll: {
+      flex: 1,
+    },
+    planCard: {
+      margin: SPACING.md,
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.md,
+      borderWidth: 1,
+      padding: SPACING.md,
+      gap: SPACING.md,
+    },
+    planTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+    },
+    planInfo: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: SPACING.sm,
+      flex: 1,
+    },
+    planIcon: {
+      fontSize: 28,
+    },
+    planText: {
+      flex: 1,
+      gap: 3,
+    },
+    planName: {
+      fontFamily: FONTS.sans,
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    planTagline: {
+      fontFamily: FONTS.sans,
+      fontSize: 12,
+      color: colors.textMid,
+      lineHeight: 17,
+    },
+    switchPlanButton: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: RADIUS.sm,
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.md,
+      alignItems: 'center',
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    switchPlanText: {
+      fontFamily: FONTS.sans,
+      fontSize: 13,
+      color: colors.textMid,
+    },
+    section: {
+      marginHorizontal: SPACING.md,
+      marginBottom: SPACING.md,
+    },
+    sectionHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.sm,
+    },
+    sectionHeader: {
+      fontFamily: FONTS.sans,
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.textDim,
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+    },
+    editLink: {
+      fontFamily: FONTS.sans,
+      fontSize: 13,
+      color: colors.gold,
+      fontWeight: '600',
+    },
+    chipsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    chipsScrollContent: {
+      flexDirection: 'row',
+      gap: SPACING.xs,
+      paddingRight: SPACING.md,
+    },
+    emptyText: {
+      fontFamily: FONTS.sans,
+      fontSize: 13,
+      color: colors.textDim,
+      textDecorationLine: 'underline',
+    },
+    settingsCard: {
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: 'hidden',
+    },
+    settingRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.md,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      minHeight: 52,
+    },
+    settingRowLast: {
+      borderBottomWidth: 0,
+    },
+    settingLabel: {
+      fontFamily: FONTS.sans,
+      fontSize: 14,
+      color: colors.text,
+    },
+    settingValue: {
+      fontFamily: FONTS.sans,
+      fontSize: 13,
+      color: colors.textMid,
+    },
+    settingValueRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.sm,
+    },
+    changeLink: {
+      fontFamily: FONTS.sans,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    resetButton: {
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.md,
+      borderWidth: 1,
+      borderColor: colors.red + '66',
+      paddingVertical: SPACING.md,
+      alignItems: 'center',
+      minHeight: 52,
+      justifyContent: 'center',
+    },
+    resetText: {
+      fontFamily: FONTS.sans,
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.red,
+    },
+    bottomPad: {
+      height: SPACING.xl,
+    },
+  });
+}

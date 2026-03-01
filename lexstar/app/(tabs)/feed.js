@@ -9,10 +9,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
-import { COLORS, SPACING, RADIUS, FONTS } from '../../src/constants/theme';
+import { SPACING, RADIUS, FONTS } from '../../src/constants/theme';
 import { MOCK_ARTICLES } from '../../src/data/mockArticles';
 import ArticleCard from '../../src/components/ArticleCard';
-import { useUser } from '../../src/context/UserContext';
+import { useUser, useColors } from '../../src/context/UserContext';
 import { filterArticles, sortArticles } from '../../src/utils/feedFilter';
 
 function LiveDot() {
@@ -37,6 +37,8 @@ const DETAIL_LEVELS = ['Headlines', 'Brief', 'Full'];
 
 export default function FeedScreen() {
   const { user } = useUser();
+  const colors = useColors();
+  const styles = makeStyles(colors);
   const [detailLevel, setDetailLevel] = useState(0);
   const [expandedId, setExpandedId] = useState(null);
   const [currentTime, setCurrentTime] = useState(getCurrentTime());
@@ -55,7 +57,7 @@ export default function FeedScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" />
+      <StatusBar style={colors.text === '#E8E4DC' ? 'light' : 'dark'} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -140,158 +142,160 @@ export default function FeedScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    backgroundColor: COLORS.bg,
-  },
-  wordmark: {
-    fontFamily: FONTS.serif,
-    fontSize: 24,
-    color: COLORS.gold,
-    letterSpacing: 0.5,
-  },
-  filterButton: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs + 2,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: RADIUS.sm,
-    minHeight: 36,
-    justifyContent: 'center',
-  },
-  filterText: {
-    fontFamily: FONTS.sans,
-    fontSize: 13,
-    color: COLORS.textMid,
-  },
-  subHeader: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    backgroundColor: COLORS.bg,
-    gap: SPACING.sm,
-  },
-  liveRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-  },
-  liveDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: COLORS.green,
-  },
-  liveText: {
-    fontFamily: FONTS.sans,
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.green,
-    letterSpacing: 1.5,
-  },
-  timeText: {
-    fontFamily: FONTS.sans,
-    fontSize: 11,
-    color: COLORS.textMid,
-    marginLeft: SPACING.xs,
-  },
-  countPill: {
-    borderWidth: 1,
-    borderRadius: RADIUS.full,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 2,
-    marginLeft: SPACING.xs,
-  },
-  countText: {
-    fontFamily: FONTS.sans,
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    overflow: 'hidden',
-  },
-  toggleSegment: {
-    flex: 1,
-    paddingVertical: SPACING.xs + 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 36,
-  },
-  toggleSegmentActive: {
-    backgroundColor: COLORS.gold + '22',
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.gold,
-  },
-  toggleLabel: {
-    fontFamily: FONTS.sans,
-    fontSize: 13,
-    color: COLORS.textDim,
-  },
-  toggleLabelActive: {
-    color: COLORS.gold,
-    fontWeight: '600',
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: SPACING.md,
-  },
-  bottomPad: {
-    height: SPACING.xl,
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.xl,
-    gap: SPACING.md,
-  },
-  emptyTitle: {
-    fontFamily: FONTS.sans,
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  emptySub: {
-    fontFamily: FONTS.sans,
-    fontSize: 14,
-    color: COLORS.textMid,
-    textAlign: 'center',
-    lineHeight: 21,
-  },
-  emptyButton: {
-    borderWidth: 1,
-    borderRadius: RADIUS.sm,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sm,
-    marginTop: SPACING.xs,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  emptyButtonText: {
-    fontFamily: FONTS.sans,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});
+function makeStyles(colors) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.bg,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: SPACING.md,
+      paddingTop: SPACING.md,
+      paddingBottom: SPACING.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      backgroundColor: colors.bg,
+    },
+    wordmark: {
+      fontFamily: FONTS.serif,
+      fontSize: 24,
+      color: colors.gold,
+      letterSpacing: 0.5,
+    },
+    filterButton: {
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: SPACING.xs + 2,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: RADIUS.sm,
+      minHeight: 36,
+      justifyContent: 'center',
+    },
+    filterText: {
+      fontFamily: FONTS.sans,
+      fontSize: 13,
+      color: colors.textMid,
+    },
+    subHeader: {
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      backgroundColor: colors.bg,
+      gap: SPACING.sm,
+    },
+    liveRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.xs,
+    },
+    liveDot: {
+      width: 7,
+      height: 7,
+      borderRadius: 4,
+      backgroundColor: colors.green,
+    },
+    liveText: {
+      fontFamily: FONTS.sans,
+      fontSize: 11,
+      fontWeight: '700',
+      color: colors.green,
+      letterSpacing: 1.5,
+    },
+    timeText: {
+      fontFamily: FONTS.sans,
+      fontSize: 11,
+      color: colors.textMid,
+      marginLeft: SPACING.xs,
+    },
+    countPill: {
+      borderWidth: 1,
+      borderRadius: RADIUS.full,
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: 2,
+      marginLeft: SPACING.xs,
+    },
+    countText: {
+      fontFamily: FONTS.sans,
+      fontSize: 10,
+      fontWeight: '600',
+    },
+    toggleRow: {
+      flexDirection: 'row',
+      backgroundColor: colors.surface,
+      borderRadius: RADIUS.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: 'hidden',
+    },
+    toggleSegment: {
+      flex: 1,
+      paddingVertical: SPACING.xs + 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 36,
+    },
+    toggleSegmentActive: {
+      backgroundColor: colors.gold + '22',
+      borderBottomWidth: 2,
+      borderBottomColor: colors.gold,
+    },
+    toggleLabel: {
+      fontFamily: FONTS.sans,
+      fontSize: 13,
+      color: colors.textDim,
+    },
+    toggleLabelActive: {
+      color: colors.gold,
+      fontWeight: '600',
+    },
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: SPACING.md,
+    },
+    bottomPad: {
+      height: SPACING.xl,
+    },
+    emptyState: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: SPACING.xl,
+      gap: SPACING.md,
+    },
+    emptyTitle: {
+      fontFamily: FONTS.sans,
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      textAlign: 'center',
+      lineHeight: 24,
+    },
+    emptySub: {
+      fontFamily: FONTS.sans,
+      fontSize: 14,
+      color: colors.textMid,
+      textAlign: 'center',
+      lineHeight: 21,
+    },
+    emptyButton: {
+      borderWidth: 1,
+      borderRadius: RADIUS.sm,
+      paddingHorizontal: SPACING.lg,
+      paddingVertical: SPACING.sm,
+      marginTop: SPACING.xs,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    emptyButtonText: {
+      fontFamily: FONTS.sans,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+  });
+}
