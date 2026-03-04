@@ -16,6 +16,7 @@ import { useUser, useColors } from '../../src/context/UserContext';
 import { filterArticles, sortArticles } from '../../src/utils/feedFilter';
 
 function LiveDot() {
+  const colors = useColors();
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
@@ -24,7 +25,7 @@ function LiveDot() {
   }, []);
 
   return (
-    <View style={[styles.liveDot, { opacity: visible ? 1 : 0.3 }]} />
+    <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.green, opacity: visible ? 1 : 0.3 }} />
   );
 }
 
@@ -53,7 +54,7 @@ export default function FeedScreen() {
   };
 
   const filtered = sortArticles(filterArticles(MOCK_ARTICLES, user));
-  const accentColor = user.plan === 'pro' ? COLORS.gold : COLORS.student;
+  const accentColor = user.plan === 'pro' ? colors.gold : colors.student;
 
   return (
     <SafeAreaView style={styles.safeArea}>

@@ -18,9 +18,9 @@ export const COLORS = {
 
 // Colours — light theme
 export const LIGHT_COLORS = {
-  bg:       '#F5F3EE',
+  bg:       '#F8F6F2',
   surface:  '#FFFFFF',
-  border:   '#E2DFDA',
+  border:   '#E8E4DC',
   borderB:  '#D0CCC5',
   gold:     '#D4AF6A',
   goldDim:  '#8A6F3E',
@@ -28,9 +28,9 @@ export const LIGHT_COLORS = {
   green:    '#3ECF8E',
   red:      '#FF5C5C',
   purple:   '#A78BFA',
-  text:     '#1A1814',
-  textMid:  '#6B6861',
-  textDim:  '#B0ACA6',
+  text:     '#0D0F14',
+  textMid:  '#5A5A60',
+  textDim:  '#C0BDB8',
   student:  '#6C8EFF',
 };
 
