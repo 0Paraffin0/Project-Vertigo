@@ -128,7 +128,7 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={styles.switchPlanButton}
             activeOpacity={0.7}
-            onPress={() => router.push('/onboarding/plan')}
+            onPress={() => router.push('/onboarding/plan?returnTo=profile')}
           >
             <Text style={styles.switchPlanText}>Switch Plan</Text>
           </TouchableOpacity>

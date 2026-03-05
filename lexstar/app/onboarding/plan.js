@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { COLORS, SPACING, RADIUS, FONTS } from '../../src/constants/theme';
 import ProgressBar from '../../src/components/ProgressBar';
 import PrimaryButton from '../../src/components/PrimaryButton';
@@ -79,8 +79,9 @@ function PlanCard({ plan, selected, onSelect }) {
 }
 
 export default function PlanScreen() {
-  const { updateUser } = useUser();
-  const [selectedPlan, setSelectedPlan] = useState('student');
+  const { user, updateUser } = useUser();
+  const { returnTo } = useLocalSearchParams();
+  const [selectedPlan, setSelectedPlan] = useState(user.plan || 'student');
   const activePlan = PLANS.find((p) => p.id === selectedPlan);
 
   return (
@@ -91,7 +92,7 @@ export default function PlanScreen() {
         <Text style={styles.backArrow}>←</Text>
       </TouchableOpacity>
 
-      <ProgressBar step={2} total={6} milestone="Your Plan" nextMilestone="Your Field" />
+      {!returnTo && <ProgressBar step={2} total={6} milestone="Your Plan" nextMilestone="Your Field" />}
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <Text style={styles.heading}>Choose your plan</Text>
@@ -109,11 +110,15 @@ export default function PlanScreen() {
 
       <View style={styles.footer}>
         <PrimaryButton
-          label="Continue →"
+          label={returnTo ? 'Save Plan →' : 'Continue →'}
           accentColor={activePlan.accent}
           onPress={() => {
             updateUser({ plan: selectedPlan });
-            router.push('/onboarding/industry');
+            if (returnTo === 'profile') {
+              router.replace('/(tabs)/profile');
+            } else {
+              router.push('/onboarding/industry');
+            }
           }}
         />
       </View>
