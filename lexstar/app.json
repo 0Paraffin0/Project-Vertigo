@@ -34,8 +34,8 @@
       "expo-font"
     ],
     "extra": {
-      "newsApiKey": "29c52b6d7c704430948faa03c138fcc5",
-      "anthropicApiKey": "your_anthropic_key_here"
+      "newsApiKey": "",
+      "anthropicApiKey": ""
     }
   }
 }
