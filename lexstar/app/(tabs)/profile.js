@@ -138,7 +138,7 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <SectionHeader
             title="My Feed"
-            onEdit={() => router.push('/onboarding/feed-prefs')}
+            onEdit={() => router.push('/onboarding/feed-prefs?returnTo=profile')}
           />
           {feedPrefLabels.length > 0 ? (
             <ScrollView
@@ -152,7 +152,7 @@ export default function ProfileScreen() {
             </ScrollView>
           ) : (
             <TouchableOpacity
-              onPress={() => router.push('/onboarding/feed-prefs')}
+              onPress={() => router.push('/onboarding/feed-prefs?returnTo=profile')}
               activeOpacity={0.7}
             >
               <Text style={styles.emptyText}>No preferences set — tap to add</Text>
@@ -186,7 +186,7 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <SectionHeader
             title="My Regions"
-            onEdit={() => router.push('/onboarding/feed-prefs')}
+            onEdit={() => router.push('/onboarding/feed-prefs?section=regions&returnTo=profile')}
           />
           {regionLabels.length > 0 ? (
             <View style={styles.chipsRow}>
@@ -196,7 +196,7 @@ export default function ProfileScreen() {
             </View>
           ) : (
             <TouchableOpacity
-              onPress={() => router.push('/onboarding/feed-prefs')}
+              onPress={() => router.push('/onboarding/feed-prefs?section=regions&returnTo=profile')}
               activeOpacity={0.7}
             >
               <Text style={styles.emptyText}>No regions selected — tap to add</Text>

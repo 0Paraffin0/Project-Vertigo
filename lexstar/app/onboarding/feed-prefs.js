@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,14 +8,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { COLORS, SPACING, RADIUS, FONTS } from '../../src/constants/theme';
 import { FEED_PREFS } from '../../src/data/feedPrefs';
 import { REGIONS } from '../../src/data/regions';
 import ProgressBar from '../../src/components/ProgressBar';
 import PrimaryButton from '../../src/components/PrimaryButton';
 import GhostButton from '../../src/components/GhostButton';
-import TagChip from '../../src/components/TagChip';
 import { useUser } from '../../src/context/UserContext';
 
 function StoryTypeCard({ pref, active, onToggle }) {
@@ -40,9 +39,27 @@ function StoryTypeCard({ pref, active, onToggle }) {
 }
 
 export default function FeedPrefsScreen() {
-  const { updateUser } = useUser();
-  const [activePrefs, setActivePrefs] = useState(['breaking', 'regulatory']);
-  const [activeRegions, setActiveRegions] = useState(['uk', 'us']);
+  const { updateUser, user } = useUser();
+  const { section, returnTo } = useLocalSearchParams();
+
+  const [activePrefs, setActivePrefs] = useState(
+    user.feedPrefs && user.feedPrefs.length > 0 ? user.feedPrefs : ['breaking', 'regulatory']
+  );
+  const [activeRegions, setActiveRegions] = useState(
+    user.regions && user.regions.length > 0 ? user.regions : ['uk', 'us']
+  );
+
+  const scrollRef = useRef(null);
+  const [regionsY, setRegionsY] = useState(null);
+
+  // Auto-scroll to regions section when section=regions param is set
+  useEffect(() => {
+    if (section === 'regions' && regionsY !== null && scrollRef.current) {
+      setTimeout(() => {
+        scrollRef.current.scrollTo({ y: regionsY - 16, animated: true });
+      }, 100);
+    }
+  }, [regionsY, section]);
 
   const togglePref = (id) => {
     setActivePrefs((prev) =>
@@ -56,6 +73,24 @@ export default function FeedPrefsScreen() {
     );
   };
 
+  const handleContinue = () => {
+    updateUser({ feedPrefs: activePrefs, regions: activeRegions });
+    if (returnTo === 'profile') {
+      router.replace('/(tabs)/profile');
+    } else {
+      router.push('/onboarding/notifications');
+    }
+  };
+
+  const handleSkip = () => {
+    updateUser({ feedPrefs: activePrefs, regions: activeRegions });
+    if (returnTo === 'profile') {
+      router.replace('/(tabs)/profile');
+    } else {
+      router.push('/onboarding/notifications');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
@@ -64,9 +99,15 @@ export default function FeedPrefsScreen() {
         <Text style={styles.backArrow}>←</Text>
       </TouchableOpacity>
 
-      <ProgressBar step={4} total={6} milestone="Your Feed" nextMilestone="Notifications" />
+      {!returnTo && (
+        <ProgressBar step={4} total={6} milestone="Your Feed" nextMilestone="Notifications" />
+      )}
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+      >
         <Text style={styles.heading}>Customise your feed</Text>
         <Text style={styles.subheading}>Choose the story types and regions you care about</Text>
 
@@ -80,45 +121,54 @@ export default function FeedPrefsScreen() {
           />
         ))}
 
-        <Text style={[styles.sectionLabel, { marginTop: SPACING.md }]}>REGIONS</Text>
-        <View style={styles.regionsRow}>
-          {REGIONS.map((region) => (
-            <TouchableOpacity
-              key={region.id}
-              onPress={() => toggleRegion(region.id)}
-              activeOpacity={0.7}
-              style={[
-                styles.regionChip,
-                activeRegions.includes(region.id) && styles.regionChipActive,
-              ]}
-            >
-              <Text style={styles.regionFlag}>{region.flag}</Text>
-              <Text style={[
-                styles.regionLabel,
-                activeRegions.includes(region.id) && styles.regionLabelActive,
-              ]}>
-                {region.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View
+          onLayout={(e) => setRegionsY(e.nativeEvent.layout.y)}
+        >
+          <Text style={[
+            styles.sectionLabel,
+            { marginTop: SPACING.md },
+            section === 'regions' && styles.sectionLabelHighlight,
+          ]}>
+            REGIONS
+          </Text>
+          <View style={[
+            styles.regionsRow,
+            section === 'regions' && styles.regionsRowHighlight,
+          ]}>
+            {REGIONS.map((region) => (
+              <TouchableOpacity
+                key={region.id}
+                onPress={() => toggleRegion(region.id)}
+                activeOpacity={0.7}
+                style={[
+                  styles.regionChip,
+                  activeRegions.includes(region.id) && styles.regionChipActive,
+                ]}
+              >
+                <Text style={styles.regionFlag}>{region.flag}</Text>
+                <Text style={[
+                  styles.regionLabel,
+                  activeRegions.includes(region.id) && styles.regionLabelActive,
+                ]}>
+                  {region.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       </ScrollView>
 
       <View style={styles.footer}>
         <PrimaryButton
-          label="Continue →"
-          onPress={() => {
-            updateUser({ feedPrefs: activePrefs, regions: activeRegions });
-            router.push('/onboarding/notifications');
-          }}
+          label={returnTo === 'profile' ? 'Save Changes' : 'Continue →'}
+          onPress={handleContinue}
         />
-        <GhostButton
-          label="Set up later"
-          onPress={() => {
-            updateUser({ feedPrefs: activePrefs, regions: activeRegions });
-            router.push('/onboarding/notifications');
-          }}
-        />
+        {!returnTo && (
+          <GhostButton
+            label="Set up later"
+            onPress={handleSkip}
+          />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -168,6 +218,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: SPACING.xs,
     marginTop: SPACING.xs,
+  },
+  sectionLabelHighlight: {
+    color: COLORS.gold,
   },
   storyCard: {
     backgroundColor: COLORS.surface,
@@ -233,6 +286,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: SPACING.sm,
+  },
+  regionsRowHighlight: {
+    borderWidth: 1,
+    borderColor: COLORS.gold + '44',
+    borderRadius: RADIUS.md,
+    padding: SPACING.sm,
   },
   regionChip: {
     flexDirection: 'row',

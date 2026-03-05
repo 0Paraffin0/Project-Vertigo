@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
+  RefreshControl,
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
@@ -10,10 +11,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { SPACING, RADIUS, FONTS } from '../../src/constants/theme';
-import { MOCK_ARTICLES } from '../../src/data/mockArticles';
 import ArticleCard from '../../src/components/ArticleCard';
+import SkeletonCard from '../../src/components/SkeletonCard';
+import FilterPanel from '../../src/components/FilterPanel';
 import { useUser, useColors } from '../../src/context/UserContext';
 import { filterArticles, sortArticles } from '../../src/utils/feedFilter';
+import { fetchFeed, clearFeedCache } from '../../src/services/feedService';
+import { relativeTime } from '../../src/utils/timeUtils';
+import { getTrendingTags } from '../../src/utils/trendingUtils';
 
 function LiveDot() {
   const colors = useColors();
@@ -40,21 +45,86 @@ export default function FeedScreen() {
   const { user } = useUser();
   const colors = useColors();
   const styles = makeStyles(colors);
+
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
   const [detailLevel, setDetailLevel] = useState(0);
   const [expandedId, setExpandedId] = useState(null);
   const [currentTime, setCurrentTime] = useState(getCurrentTime());
+  const [filterVisible, setFilterVisible] = useState(false);
+  const [activeFilters, setActiveFilters] = useState({
+    storyTypes: user.feedPrefs || [],
+    regions: user.regions || [],
+  });
 
+  const accentColor = user.plan === 'pro' ? colors.gold : colors.student;
+
+  // Clock tick
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(getCurrentTime()), 30000);
     return () => clearInterval(timer);
   }, []);
 
+  const loadFeed = useCallback(async (forceRefresh = false) => {
+    setError(false);
+    try {
+      if (forceRefresh) await clearFeedCache();
+      const raw = await fetchFeed(user);
+      setArticles(raw);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    setLoading(true);
+    loadFeed();
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadFeed(true);
+  }, [loadFeed]);
+
   const handleCardPress = (id) => {
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
-  const filtered = sortArticles(filterArticles(MOCK_ARTICLES, user));
-  const accentColor = user.plan === 'pro' ? colors.gold : colors.student;
+  // Apply active filters on top of the loaded articles
+  const filterProfile = {
+    ...user,
+    feedPrefs: activeFilters.storyTypes,
+    regions: activeFilters.regions,
+  };
+  const filtered = sortArticles(filterArticles(articles, filterProfile));
+  const trendingTags = getTrendingTags(articles, 6);
+
+  const handleApplyFilters = (filters) => {
+    setActiveFilters(filters);
+    setFilterVisible(false);
+  };
+
+  const handleTrendingTagPress = (tag) => {
+    // Filter by matching articles that contain this tag
+    const matchingTypes = articles
+      .filter((a) => (a.tags || []).includes(tag))
+      .map((a) => a.storyType)
+      .filter(Boolean);
+    const uniqueTypes = [...new Set(matchingTypes)];
+    setActiveFilters((prev) => ({
+      ...prev,
+      storyTypes: uniqueTypes.length > 0 ? uniqueTypes : prev.storyTypes,
+    }));
+  };
+
+  const hasActiveFilters =
+    activeFilters.storyTypes.length !== (user.feedPrefs || []).length ||
+    activeFilters.regions.length !== (user.regions || []).length;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -63,8 +133,14 @@ export default function FeedScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.wordmark}>LexStar</Text>
-        <TouchableOpacity style={styles.filterButton} activeOpacity={0.7}>
-          <Text style={styles.filterText}>Filter ≡</Text>
+        <TouchableOpacity
+          style={[styles.filterButton, hasActiveFilters && { borderColor: accentColor }]}
+          activeOpacity={0.7}
+          onPress={() => setFilterVisible(true)}
+        >
+          <Text style={[styles.filterText, hasActiveFilters && { color: accentColor }]}>
+            Filter ≡
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -74,11 +150,27 @@ export default function FeedScreen() {
           <LiveDot />
           <Text style={styles.liveText}>LIVE</Text>
           <Text style={styles.timeText}>{currentTime}</Text>
-          <View style={[styles.countPill, { borderColor: accentColor }]}>
-            <Text style={[styles.countText, { color: accentColor }]}>
-              {filtered.length} stories
+          {loading && !refreshing ? (
+            <Text style={[styles.updatingText, { color: colors.textDim }]}>
+              Updating your feed...
             </Text>
-          </View>
+          ) : (
+            <View style={[styles.countPill, { borderColor: accentColor }]}>
+              <Text style={[styles.countText, { color: accentColor }]}>
+                {filtered.length} stories
+              </Text>
+            </View>
+          )}
+          {/* Refresh icon */}
+          {!loading && (
+            <TouchableOpacity
+              onPress={handleRefresh}
+              activeOpacity={0.7}
+              style={styles.refreshIconBtn}
+            >
+              <Text style={[styles.refreshIcon, { color: colors.textDim }]}>↻</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Detail level toggle */}
@@ -106,8 +198,28 @@ export default function FeedScreen() {
         </View>
       </View>
 
-      {/* Articles or empty state */}
-      {filtered.length === 0 ? (
+      {/* Loading skeleton */}
+      {loading && !refreshing ? (
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </ScrollView>
+      ) : error ? (
+        /* Error state */
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyTitle}>Could not load your feed</Text>
+          <Text style={styles.emptySub}>
+            Check your connection and pull down to refresh
+          </Text>
+        </View>
+      ) : filtered.length === 0 ? (
+        /* Empty filter state */
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>No stories match your current filters</Text>
           <Text style={styles.emptySub}>Adjust your feed preferences in Profile</Text>
@@ -124,11 +236,48 @@ export default function FeedScreen() {
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={accentColor}
+              colors={[accentColor]}
+            />
+          }
         >
+          {/* Trending Tags */}
+          {trendingTags.length > 0 && (
+            <View style={styles.trendingSection}>
+              <Text style={[styles.trendingLabel, { color: colors.gold }]}>TRENDING</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.trendingScroll}
+              >
+                {trendingTags.map(({ tag }) => (
+                  <TouchableOpacity
+                    key={tag}
+                    onPress={() => handleTrendingTagPress(tag)}
+                    activeOpacity={0.7}
+                    style={[styles.trendingChip, { borderColor: colors.border }]}
+                  >
+                    <Text style={[styles.trendingChipText, { color: colors.textMid }]}>
+                      {tag}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Articles */}
           {filtered.map((article) => (
             <ArticleCard
               key={article.id}
-              article={article}
+              article={{
+                ...article,
+                time: article.publishedAt ? relativeTime(article.publishedAt) : (article.time || 'Just now'),
+              }}
               detailLevel={detailLevel}
               isExpanded={expandedId === article.id}
               onPress={() => handleCardPress(article.id)}
@@ -139,6 +288,16 @@ export default function FeedScreen() {
           <View style={styles.bottomPad} />
         </ScrollView>
       )}
+
+      {/* Filter Panel */}
+      <FilterPanel
+        visible={filterVisible}
+        onClose={() => setFilterVisible(false)}
+        userProfile={user}
+        activeFilters={activeFilters}
+        onApply={handleApplyFilters}
+        allArticles={articles}
+      />
     </SafeAreaView>
   );
 }
@@ -193,12 +352,6 @@ function makeStyles(colors) {
       alignItems: 'center',
       gap: SPACING.xs,
     },
-    liveDot: {
-      width: 7,
-      height: 7,
-      borderRadius: 4,
-      backgroundColor: colors.green,
-    },
     liveText: {
       fontFamily: FONTS.sans,
       fontSize: 11,
@@ -212,6 +365,11 @@ function makeStyles(colors) {
       color: colors.textMid,
       marginLeft: SPACING.xs,
     },
+    updatingText: {
+      fontFamily: FONTS.sans,
+      fontSize: 11,
+      marginLeft: SPACING.xs,
+    },
     countPill: {
       borderWidth: 1,
       borderRadius: RADIUS.full,
@@ -223,6 +381,13 @@ function makeStyles(colors) {
       fontFamily: FONTS.sans,
       fontSize: 10,
       fontWeight: '600',
+    },
+    refreshIconBtn: {
+      marginLeft: 'auto',
+      padding: 4,
+    },
+    refreshIcon: {
+      fontSize: 18,
     },
     toggleRow: {
       flexDirection: 'row',
@@ -258,6 +423,30 @@ function makeStyles(colors) {
     },
     scrollContent: {
       padding: SPACING.md,
+    },
+    trendingSection: {
+      marginBottom: SPACING.md,
+    },
+    trendingLabel: {
+      fontFamily: FONTS.sans,
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 1.5,
+      marginBottom: SPACING.sm,
+    },
+    trendingScroll: {
+      gap: SPACING.xs,
+      paddingRight: SPACING.xs,
+    },
+    trendingChip: {
+      borderWidth: 1,
+      borderRadius: RADIUS.full,
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: SPACING.xs + 1,
+    },
+    trendingChipText: {
+      fontFamily: FONTS.sans,
+      fontSize: 12,
     },
     bottomPad: {
       height: SPACING.xl,

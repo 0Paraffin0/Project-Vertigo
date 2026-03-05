@@ -32,6 +32,10 @@
     "plugins": [
       "expo-router",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "newsApiKey": "your_newsapi_key_here",
+      "anthropicApiKey": "your_anthropic_key_here"
+    }
   }
 }
