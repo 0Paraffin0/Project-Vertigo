@@ -1,18 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { RADIUS, SPACING, FONTS, CATEGORY_COLORS } from '../constants/theme';
 import TagChip from './TagChip';
 import { FINANCE_SECTORS, LAW_SECTORS } from '../data/sectors';
 import { useColors } from '../context/UserContext';
+import { bookmarkArticle, removeBookmark } from '../services/bookmarkService';
 
 const ALL_SECTORS = [...FINANCE_SECTORS, ...LAW_SECTORS];
 
-export default function ArticleCard({ article, detailLevel, isExpanded, onPress, plan, userSectors = [] }) {
+export default function ArticleCard({ article, detailLevel, isExpanded, onPress, plan, userSectors = [], isBookmarked: initialBookmarked = false, uid = null, onBookmarkChange }) {
   const colors = useColors();
   const styles = makeStyles(colors);
   const categoryColor = CATEGORY_COLORS[article.category] || colors.gold;
   const isBreaking = article.breaking || article.category === 'breaking';
   const accentColor = plan === 'pro' ? colors.gold : colors.student;
+
+  const [bookmarked, setBookmarked] = useState(initialBookmarked);
 
   const matchingSector = userSectors.length > 0
     ? ALL_SECTORS.find((s) => (article.sectorIds || []).includes(s.id) && userSectors.includes(s.id))
@@ -23,6 +26,17 @@ export default function ArticleCard({ article, detailLevel, isExpanded, onPress,
   const handleSourcePress = (source) => {
     const url = "https://www.google.com/search?q=" + encodeURIComponent(source + " " + article.headline);
     Linking.openURL(url).catch(() => {});
+  };
+
+  const handleBookmarkPress = () => {
+    const newState = !bookmarked;
+    setBookmarked(newState);
+    if (newState) {
+      bookmarkArticle(article, uid).catch(() => setBookmarked(false));
+    } else {
+      removeBookmark(article.id, uid).catch(() => setBookmarked(true));
+    }
+    if (onBookmarkChange) onBookmarkChange(article.id, newState);
   };
 
   return (
@@ -38,12 +52,24 @@ export default function ArticleCard({ article, detailLevel, isExpanded, onPress,
             {article.category.toUpperCase()}
           </Text>
           {isBreaking && (
-            <View style={[styles.breakingBadge, { borderColor: COLORS.red }]}>
+            <View style={[styles.breakingBadge, { borderColor: colors.red }]}>
               <Text style={styles.breakingText}>BREAKING</Text>
             </View>
           )}
         </View>
-        <Text style={styles.time}>{article.time}</Text>
+        <View style={styles.topRight}>
+          <Text style={styles.time}>{article.time}</Text>
+          <TouchableOpacity
+            onPress={handleBookmarkPress}
+            activeOpacity={0.6}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={styles.bookmarkButton}
+          >
+            <Text style={[styles.bookmarkIcon, bookmarked && { color: colors.gold }]}>
+              {bookmarked ? '\u2605' : '\u2606'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <Text style={styles.headline}>{article.headline}</Text>
@@ -55,7 +81,7 @@ export default function ArticleCard({ article, detailLevel, isExpanded, onPress,
       {matchingSector && (
         <View style={styles.feedLabelRow}>
           <Text style={[styles.feedLabel, { color: accentColor }]}>
-            {'◈'} In your feed · {matchingSector.label}
+            {'\u25C8'} In your feed · {matchingSector.label}
           </Text>
         </View>
       )}
@@ -64,12 +90,12 @@ export default function ArticleCard({ article, detailLevel, isExpanded, onPress,
         <View style={[styles.noteBox, { backgroundColor: accentColor + "14", borderColor: accentColor + "44" }]}>
           {plan === 'pro' ? (
             <>
-              <Text style={[styles.noteLabel, { color: accentColor }]}>⚖ Pro Note</Text>
+              <Text style={[styles.noteLabel, { color: accentColor }]}>{'\u2696'} Pro Note</Text>
               <Text style={styles.noteText}>{article.proNote}</Text>
             </>
           ) : (
             <>
-              <Text style={[styles.noteLabel, { color: accentColor }]}>🎓 Student Note</Text>
+              <Text style={[styles.noteLabel, { color: accentColor }]}>{'\uD83C\uDF93'} Student Note</Text>
               <Text style={styles.noteText}>{article.studentNote}</Text>
             </>
           )}
@@ -78,7 +104,7 @@ export default function ArticleCard({ article, detailLevel, isExpanded, onPress,
 
       {article.verified && (
         <Text style={styles.verified}>
-          ✓ Verified — {(article.sources || []).join(' · ')}
+          {'\u2713'} Verified — {(article.sources || []).join(' · ')}
         </Text>
       )}
 
@@ -136,6 +162,12 @@ function makeStyles(colors) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: SPACING.xs,
+      flex: 1,
+    },
+    topRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.sm,
     },
     categoryDot: {
       width: 6,
@@ -164,6 +196,13 @@ function makeStyles(colors) {
     time: {
       fontFamily: FONTS.sans,
       fontSize: 11,
+      color: colors.textDim,
+    },
+    bookmarkButton: {
+      padding: 2,
+    },
+    bookmarkIcon: {
+      fontSize: 18,
       color: colors.textDim,
     },
     headline: {

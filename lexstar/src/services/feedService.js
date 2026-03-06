@@ -2,11 +2,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchRawHeadlines } from './newsService';
 import { summariseArticles } from './claudeService';
 import { MOCK_ARTICLES } from '../data/mockArticles';
+import { appendToArchive } from './archiveService';
 
 const CACHE_KEY = 'lexstar_feed_cache';
 const CACHE_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
-export async function fetchFeed(userProfile) {
+export async function fetchFeed(userProfile, uid = null) {
   const cached = await loadCache();
   if (cached) return cached;
 
@@ -16,6 +17,7 @@ export async function fetchFeed(userProfile) {
 
     if (summarised.length > 0) {
       await saveCache(summarised);
+      appendToArchive(summarised, uid).catch(() => {});
       return summarised;
     }
 

@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { COLORS } from '../src/constants/theme';
 import { UserProvider } from '../src/context/UserContext';
+import { AuthProvider } from '../src/context/AuthContext';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -25,17 +26,27 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <UserProvider>
-        <StatusBar style="light" />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: COLORS.bg } }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen
-            name="onboarding"
-            options={{ animation: 'slide_from_right' }}
-          />
-        </Stack>
-      </UserProvider>
+      <AuthProvider>
+        <UserProvider>
+          <StatusBar style="light" />
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: COLORS.bg } }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen
+              name="onboarding"
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="auth"
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="saved"
+              options={{ animation: 'slide_from_right' }}
+            />
+          </Stack>
+        </UserProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

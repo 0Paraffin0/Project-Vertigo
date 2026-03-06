@@ -1,51 +1,135 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   StyleSheet,
   TextInput,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { SPACING, RADIUS, FONTS, CATEGORY_COLORS } from '../../src/constants/theme';
-import { MOCK_ARTICLES } from '../../src/data/mockArticles';
-import TagChip from '../../src/components/TagChip';
-import { useColors } from '../../src/context/UserContext';
+import { router } from 'expo-router';
+import { SPACING, RADIUS, FONTS } from '../../src/constants/theme';
+import { useUser, useColors } from '../../src/context/UserContext';
+import { useAuth } from '../../src/context/AuthContext';
+import { fetchArchive } from '../../src/services/archiveService';
+import { applyDateFilter } from '../../src/utils/dateUtils';
+import { FEED_PREFS } from '../../src/data/feedPrefs';
+import ArticleCard from '../../src/components/ArticleCard';
 
-const TIME_FILTERS = ['Last 7 days', '30 days', '3 months'];
-
-function CondensedCard({ article }) {
-  const colors = useColors();
-  const styles = makeStyles(colors);
-  const categoryColor = CATEGORY_COLORS[article.category] || colors.gold;
-
-  return (
-    <View style={styles.card}>
-      <View style={styles.cardTop}>
-        <View style={styles.cardTopLeft}>
-          <View style={[styles.dot, { backgroundColor: categoryColor }]} />
-          <Text style={[styles.category, { color: categoryColor }]}>
-            {article.category.toUpperCase()}
-          </Text>
-        </View>
-        <Text style={styles.time}>{article.time}</Text>
-      </View>
-      <Text style={styles.headline}>{article.headline}</Text>
-      <View style={styles.tagsRow}>
-        {article.tags.slice(0, 2).map((tag) => (
-          <TagChip key={tag} label={tag} accentColor={categoryColor} />
-        ))}
-      </View>
-    </View>
-  );
-}
+const STORY_TYPES = [{ id: 'all', label: 'All' }, ...FEED_PREFS];
+const DATE_FILTERS = [
+  { id: 'today', label: 'Today' },
+  { id: 'week',  label: 'This Week' },
+  { id: 'month', label: 'This Month' },
+  { id: 'all',   label: 'All Time' },
+];
 
 export default function ArchiveScreen() {
   const colors = useColors();
   const styles = makeStyles(colors);
-  const [activeFilter, setActiveFilter] = useState(0);
+  const { user } = useUser();
+  const auth = useAuth();
+  const uid = auth?.user?.uid || null;
+  const accentColor = user.plan === 'pro' ? colors.gold : colors.student;
+
+  const [allArticles, setAllArticles] = useState([]);
+  const [filtered, setFiltered]       = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeStoryType, setActiveStoryType] = useState('all');
+  const [activeDateFilter, setActiveDateFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
+
+  const debounceRef = useRef(null);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  // Debounce search input by 300ms
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(debounceRef.current);
+  }, [searchQuery]);
+
+  // Load archive on mount
+  useEffect(() => {
+    loadArchive();
+  }, [uid]);
+
+  const loadArchive = async () => {
+    setLoading(true);
+    try {
+      const articles = await fetchArchive(uid);
+      setAllArticles(articles);
+    } catch {
+      setAllArticles([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter articles
+  useEffect(() => {
+    let results = allArticles;
+
+    if (debouncedQuery.length > 1) {
+      const q = debouncedQuery.toLowerCase();
+      results = results.filter(a =>
+        (a.headline || '').toLowerCase().includes(q) ||
+        (a.brief || '').toLowerCase().includes(q)
+      );
+    }
+
+    if (activeStoryType !== 'all') {
+      results = results.filter(a => a.storyType === activeStoryType);
+    }
+
+    results = applyDateFilter(results, activeDateFilter);
+    setFiltered(results);
+  }, [debouncedQuery, activeStoryType, activeDateFilter, allArticles]);
+
+  const renderArticle = useCallback(({ item }) => (
+    <ArticleCard
+      article={item}
+      detailLevel={1}
+      plan={user.plan}
+      userSectors={user.sectors}
+    />
+  ), [user.plan, user.sectors]);
+
+  const renderEmpty = () => {
+    if (loading) return null;
+
+    if (allArticles.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>Your archive is empty</Text>
+          <Text style={styles.emptySubtitle}>
+            Read your feed to start building your archive
+          </Text>
+          <TouchableOpacity
+            style={[styles.goToFeedButton, { backgroundColor: accentColor }]}
+            activeOpacity={0.7}
+            onPress={() => router.navigate('/(tabs)/feed')}
+          >
+            <Text style={styles.goToFeedText}>Go to Feed</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyTitle}>No archived articles match your search</Text>
+        <Text style={styles.emptySubtitle}>
+          Articles from your feed are saved here automatically
+        </Text>
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -54,56 +138,99 @@ export default function ArchiveScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Archive</Text>
-        <TouchableOpacity style={styles.searchIcon} activeOpacity={0.7}>
-          <Text style={styles.searchIconText}>⌕</Text>
-        </TouchableOpacity>
+        <Text style={styles.articleCount}>
+          {filtered.length} {filtered.length === 1 ? 'article' : 'articles'}
+        </Text>
       </View>
 
       {/* Search bar */}
       <View style={styles.searchBarContainer}>
         <View style={styles.searchBar}>
-          <Text style={styles.searchPlaceholder}>Search stories...</Text>
+          <Text style={styles.searchIcon}>⌕</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search stories..."
+            placeholderTextColor={colors.textDim}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setSearchQuery('')}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={styles.clearButton}>✕</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      {/* Filter row */}
+      {/* Story type chips */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.filterScroll}
-        contentContainerStyle={styles.filterContent}
+        style={styles.chipScroll}
+        contentContainerStyle={styles.chipContent}
       >
-        {TIME_FILTERS.map((filter, index) => (
-          <TouchableOpacity
-            key={filter}
-            onPress={() => setActiveFilter(index)}
-            activeOpacity={0.7}
-            style={[
-              styles.filterPill,
-              activeFilter === index && styles.filterPillActive,
-            ]}
-          >
-            <Text style={[styles.filterLabel, activeFilter === index && styles.filterLabelActive]}>
-              {filter}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {STORY_TYPES.map((type) => {
+          const isActive = activeStoryType === type.id;
+          return (
+            <TouchableOpacity
+              key={type.id}
+              onPress={() => setActiveStoryType(type.id)}
+              activeOpacity={0.7}
+              style={[
+                styles.chip,
+                isActive && { borderColor: accentColor, backgroundColor: accentColor + '15' },
+              ]}
+            >
+              <Text style={[
+                styles.chipLabel,
+                isActive && { color: accentColor, fontWeight: '600' },
+              ]}>
+                {type.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
-      {/* Articles */}
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.scrollContent}>
-          {MOCK_ARTICLES.map((article) => (
-            <CondensedCard key={article.id} article={article} />
-          ))}
-        </View>
+      {/* Date filter row */}
+      <View style={styles.dateFilterRow}>
+        {DATE_FILTERS.map((df) => {
+          const isActive = activeDateFilter === df.id;
+          return (
+            <TouchableOpacity
+              key={df.id}
+              onPress={() => setActiveDateFilter(df.id)}
+              activeOpacity={0.7}
+              style={[
+                styles.datePill,
+                isActive && { backgroundColor: accentColor, borderColor: accentColor },
+              ]}
+            >
+              <Text style={[
+                styles.datePillLabel,
+                isActive && { color: colors.bg, fontWeight: '700' },
+              ]}>
+                {df.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
-        <View style={styles.footerNote}>
-          <Text style={styles.footerText}>Full archive search coming in Phase 3</Text>
-        </View>
-
-        <View style={styles.bottomPad} />
-      </ScrollView>
+      {/* Archive list */}
+      <FlatList
+        data={filtered}
+        renderItem={renderArticle}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={renderEmpty}
+      />
     </SafeAreaView>
   );
 }
@@ -129,14 +256,9 @@ function makeStyles(colors) {
       fontSize: 24,
       color: colors.text,
     },
-    searchIcon: {
-      width: 44,
-      height: 44,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    searchIconText: {
-      fontSize: 22,
+    articleCount: {
+      fontFamily: FONTS.sans,
+      fontSize: 13,
       color: colors.textMid,
     },
     searchBarContainer: {
@@ -146,121 +268,119 @@ function makeStyles(colors) {
       borderBottomColor: colors.border,
     },
     searchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
       backgroundColor: colors.surface,
       borderRadius: RADIUS.sm,
       borderWidth: 1,
       borderColor: colors.border,
       paddingHorizontal: SPACING.md,
-      paddingVertical: SPACING.sm + 2,
       minHeight: 44,
-      justifyContent: 'center',
     },
-    searchPlaceholder: {
+    searchIcon: {
+      fontSize: 18,
+      color: colors.textDim,
+      marginRight: SPACING.sm,
+    },
+    searchInput: {
+      flex: 1,
       fontFamily: FONTS.sans,
       fontSize: 14,
-      color: colors.textDim,
+      color: colors.text,
+      paddingVertical: SPACING.sm,
     },
-    filterScroll: {
+    clearButton: {
+      fontSize: 14,
+      color: colors.textMid,
+      paddingLeft: SPACING.sm,
+    },
+    chipScroll: {
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
-    filterContent: {
+    chipContent: {
       paddingHorizontal: SPACING.md,
       paddingVertical: SPACING.sm,
       gap: SPACING.xs,
     },
-    filterPill: {
+    chip: {
       paddingHorizontal: SPACING.md,
       paddingVertical: SPACING.xs + 2,
       borderRadius: RADIUS.full,
       borderWidth: 1,
       borderColor: colors.border,
-      minHeight: 36,
-      justifyContent: 'center',
       marginRight: SPACING.xs,
+      minHeight: 34,
+      justifyContent: 'center',
     },
-    filterPillActive: {
-      borderColor: colors.gold,
-      backgroundColor: colors.gold + '15',
-    },
-    filterLabel: {
-      fontFamily: FONTS.sans,
-      fontSize: 13,
-      color: colors.textDim,
-    },
-    filterLabelActive: {
-      color: colors.gold,
-      fontWeight: '600',
-    },
-    scroll: {
-      flex: 1,
-    },
-    scrollContent: {
-      padding: SPACING.md,
-    },
-    card: {
-      backgroundColor: colors.surface,
-      borderRadius: RADIUS.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      padding: SPACING.md,
-      marginBottom: SPACING.sm,
-    },
-    cardTop: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: SPACING.xs,
-    },
-    cardTopLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: SPACING.xs,
-    },
-    dot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
-    },
-    category: {
-      fontFamily: FONTS.sans,
-      fontSize: 10,
-      fontWeight: '700',
-      letterSpacing: 1,
-    },
-    time: {
-      fontFamily: FONTS.sans,
-      fontSize: 11,
-      color: colors.textDim,
-    },
-    headline: {
-      fontFamily: FONTS.serif,
-      fontSize: 16,
-      lineHeight: 22,
-      color: colors.text,
-      marginBottom: SPACING.sm,
-    },
-    tagsRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-    },
-    footerNote: {
-      marginHorizontal: SPACING.md,
-      marginBottom: SPACING.md,
-      padding: SPACING.md,
-      backgroundColor: colors.surface,
-      borderRadius: RADIUS.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      alignItems: 'center',
-    },
-    footerText: {
+    chipLabel: {
       fontFamily: FONTS.sans,
       fontSize: 12,
       color: colors.textDim,
     },
-    bottomPad: {
-      height: SPACING.xl,
+    dateFilterRow: {
+      flexDirection: 'row',
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      gap: SPACING.xs,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    datePill: {
+      flex: 1,
+      paddingVertical: SPACING.xs + 2,
+      borderRadius: RADIUS.full,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 34,
+    },
+    datePillLabel: {
+      fontFamily: FONTS.sans,
+      fontSize: 11,
+      color: colors.textDim,
+    },
+    listContent: {
+      padding: SPACING.md,
+      paddingBottom: SPACING.xl,
+      flexGrow: 1,
+    },
+    emptyContainer: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: SPACING.xxl * 2,
+      paddingHorizontal: SPACING.lg,
+    },
+    emptyTitle: {
+      fontFamily: FONTS.serif,
+      fontSize: 18,
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: SPACING.sm,
+    },
+    emptySubtitle: {
+      fontFamily: FONTS.sans,
+      fontSize: 14,
+      color: colors.textMid,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    goToFeedButton: {
+      marginTop: SPACING.lg,
+      paddingHorizontal: SPACING.lg,
+      paddingVertical: SPACING.md,
+      borderRadius: RADIUS.sm,
+      minHeight: 48,
+      justifyContent: 'center',
+    },
+    goToFeedText: {
+      fontFamily: FONTS.sans,
+      fontSize: 15,
+      fontWeight: '700',
+      color: '#080A0F',
+      textAlign: 'center',
     },
   });
 }
