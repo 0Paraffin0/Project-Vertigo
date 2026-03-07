@@ -64,9 +64,14 @@ export function UserProvider({ children }) {
       }
     }
 
-    // Only load once auth has resolved
+    // Load once auth has resolved, or after 3s timeout to avoid infinite loading
     if (auth && !auth.authLoading) {
       loadProfile();
+    } else {
+      const timeout = setTimeout(() => {
+        loadProfile();
+      }, 3000);
+      return () => clearTimeout(timeout);
     }
   }, [firebaseUser?.uid, auth?.authLoading]);
 
