@@ -1,39 +1,31 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Redirect } from 'expo-router';
+import React, { useEffect } from 'react';
+import { View, ActivityIndicator } from 'react-native';
+import { router } from 'expo-router';
 import { useUser } from '../src/context/UserContext';
 import { useAuth } from '../src/context/AuthContext';
-import { COLORS, FONTS } from '../src/constants/theme';
+import { COLORS } from '../src/constants/theme';
 
 export default function Index() {
   const { user } = useUser();
   const auth = useAuth();
 
-  // 1. No Firebase user (or still loading) → navigate to auth/login
-  if (!auth?.user) {
-    return <Redirect href="/auth/login" />;
-  }
+  useEffect(() => {
+    // Wait for Firebase auth to resolve before redirecting
+    if (auth?.authLoading) return;
 
-  // 3. Firebase user exists, hasOnboarded false → onboarding
-  if (!user.hasOnboarded) {
-    return <Redirect href="/onboarding/welcome" />;
-  }
+    if (!auth?.user) {
+      router.replace('/auth/login');
+    } else if (!user.hasOnboarded) {
+      router.replace('/onboarding/welcome');
+    } else {
+      router.replace('/(tabs)/feed');
+    }
+  }, [auth?.authLoading, auth?.user, user.hasOnboarded]);
 
-  // 4. Firebase user exists, hasOnboarded true → feed
-  return <Redirect href="/(tabs)/feed" />;
+  // Show loading spinner while Firebase resolves
+  return (
+    <View style={{ flex: 1, backgroundColor: COLORS.bg, justifyContent: 'center', alignItems: 'center' }}>
+      <ActivityIndicator color={COLORS.gold} />
+    </View>
+  );
 }
-
-const styles = StyleSheet.create({
-  loadingScreen: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  wordmark: {
-    fontFamily: FONTS.serif,
-    fontSize: 36,
-    color: COLORS.gold,
-    letterSpacing: 1,
-  },
-});
