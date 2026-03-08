@@ -34,7 +34,7 @@ const UserContext = createContext(null);
 
 export function UserProvider({ children }) {
   const [state, dispatch] = useReducer(userReducer, INITIAL_STATE);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const auth = useAuth();
   const firebaseUser = auth?.user || null;
 
