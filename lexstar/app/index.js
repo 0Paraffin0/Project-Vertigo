@@ -9,16 +9,7 @@ export default function Index() {
   const { user } = useUser();
   const auth = useAuth();
 
-  // 1. Auth is still loading → show loading screen
-  if (auth?.authLoading) {
-    return (
-      <View style={styles.loadingScreen}>
-        <Text style={styles.wordmark}>LexStar</Text>
-      </View>
-    );
-  }
-
-  // 2. No Firebase user → navigate to auth/login
+  // 1. No Firebase user (or still loading) → navigate to auth/login
   if (!auth?.user) {
     return <Redirect href="/auth/login" />;
   }
