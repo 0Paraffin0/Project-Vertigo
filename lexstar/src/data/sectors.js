@@ -1,0 +1,31 @@
+export const FINANCE_SECTORS = [
+  { id: 'corp-finance', label: 'Corporate Finance & Advisory', icon: '💼' },
+  { id: 'investment-banking', label: 'Investment Banking', icon: '🏦' },
+  { id: 'pe-vc', label: 'Private Equity & Venture Capital', icon: '🔒' },
+  { id: 'asset-mgmt', label: 'Asset Management & Investment Funds', icon: '📊' },
+  { id: 'trading', label: 'Trading & Sales', icon: '📈' },
+  { id: 'risk', label: 'Risk Management & Quantitative Analysis', icon: '🛡️' },
+  { id: 'research', label: 'Research & Analytics', icon: '🔬' },
+  { id: 'regulation', label: 'Financial Regulation & Compliance', icon: '📋' },
+  { id: 'structured', label: 'Structured Finance & Securitization', icon: '🏗️' },
+  { id: 'restructuring', label: 'Restructuring & Distressed Finance', icon: '🔄' },
+  { id: 'derivatives', label: 'Derivatives & Structured Products', icon: '🔷' },
+  { id: 'wealth', label: 'Wealth Management & Private Banking', icon: '💎' },
+  { id: 'fintech', label: 'Fintech, Crypto & Digital Assets', icon: '⚡' },
+];
+
+export const LAW_SECTORS = [
+  { id: 'corporate-ma', label: 'Corporate & M&A', icon: '⚖️' },
+  { id: 'pe-funds', label: 'Private Equity & Investment Funds', icon: '🔒' },
+  { id: 'banking-finance', label: 'Banking & Finance', icon: '🏦' },
+  { id: 'capital-markets', label: 'Capital Markets', icon: '📈' },
+  { id: 'competition', label: 'Competition & Antitrust', icon: '🔍' },
+  { id: 'restructuring', label: 'Restructuring & Insolvency', icon: '🔄' },
+  { id: 'litigation', label: 'Litigation & Dispute Resolution', icon: '🏛️' },
+  { id: 'investigations', label: 'Investigations & White Collar Defense', icon: '🔎' },
+  { id: 'employment', label: 'Employment & Labor', icon: '👥' },
+  { id: 'tax', label: 'Tax', icon: '🧮' },
+  { id: 'real-estate', label: 'Real Estate', icon: '🏢' },
+  { id: 'ip', label: 'Intellectual Property', icon: '💡' },
+  { id: 'tech-data', label: 'Technology & Data Privacy', icon: '🔐' },
+];
